@@ -434,6 +434,16 @@ function paintBridge() {
     return;
   }
 
+  // Instalado, mas o Claude Code está trabalhando sem chamar o bridge. O caso
+  // clássico é o app desktop: a statusLine é recurso do terminal.
+  if (bridge.installed && bridge.idle) {
+    const min = Math.round(bridge.idle.staleMs / 60000);
+    hint.textContent = `conectado, mas sem leitura há ${min} min — o app desktop não executa a statusLine; use o Claude Code no terminal`;
+    button.textContent = 'desconectar';
+    button.classList.add('is-warn');
+    return;
+  }
+
   if (bridge.installed) {
     // Reconexão automática precisa aparecer. Se a entrada some e volta sem
     // dizer nada, o usuário não tem como saber que houve um buraco nos dados.

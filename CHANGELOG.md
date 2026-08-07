@@ -6,6 +6,16 @@ disponível — então escreva pensando em quem vai ler antes de decidir se baix
 
 ## [Não publicado]
 
+## [1.0.4] — 2026-08-07
+
+### Corrigido
+
+- O painel dizia "conectado" e não entregava número nenhum para quem usa o
+  aplicativo de desktop. A statusLine é um recurso do terminal — desenha uma
+  linha abaixo do prompt no TUI — e na interface gráfica ela nunca é executada.
+  Agora o app detecta a situação, comparando transcripts recentes com a idade
+  do último dado, e explica que é preciso usar o Claude Code no terminal.
+
 ## [1.0.3] — 2026-08-07
 
 ### Corrigido
@@ -107,7 +117,8 @@ Primeira versão pública.
 - O bridge roda pelo próprio executável em modo Node, então **o app não exige
   Node instalado**.
 
-[Não publicado]: https://github.com/ErikPervious/Perch/compare/v1.0.3...HEAD
+[Não publicado]: https://github.com/ErikPervious/Perch/compare/v1.0.4...HEAD
+[1.0.4]: https://github.com/ErikPervious/Perch/compare/v1.0.3...v1.0.4
 [1.0.3]: https://github.com/ErikPervious/Perch/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/ErikPervious/Perch/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/ErikPervious/Perch/compare/v1.0.0...v1.0.1
