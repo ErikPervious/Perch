@@ -21,6 +21,13 @@ const DEFAULTS = {
   format: 'card', // formato que o atalho abre: 'card' | 'bar' | 'pill'
   accent: 'auto', // 'auto' segue o nivel de uso; ou um hex fixo
 
+  // --- bridge
+  //
+  // Guarda a INTENCAO do usuario, nao o estado do settings.json. E o que
+  // permite distinguir "apagaram nossa entrada" de "o usuario desconectou de
+  // proposito" -- sem isso o app reinstalaria por cima da decisao dele.
+  bridgeWanted: false,
+
   // --- comportamento
   autoDrop: true, // descer sozinha nos gatilhos
   idleVisible: false, // manter uma pilula discreta quando ocioso

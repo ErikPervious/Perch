@@ -161,14 +161,39 @@ function uninstall() {
 }
 
 /**
- * Chamado na inicializacao. Mantem o shim e o settings.json apontando pro
- * lugar certo mesmo depois de atualizar ou mover o app -- sem isso, uma
- * atualizacao deixaria o Claude Code chamando um caminho que nao existe mais,
- * e a ilha ficaria muda sem explicar por que.
+ * Mantem a instalacao de pe. Chamado na inicializacao e periodicamente.
+ *
+ * Cobre dois estragos diferentes:
+ *
+ * 1. **Caminho velho.** Atualizar ou mover o app deixaria o Claude Code
+ *    chamando um caminho que nao existe mais.
+ *
+ * 2. **Entrada apagada.** O `settings.json` tem DOIS escritores: o Claude Code
+ *    tambem regrava o arquivo inteiro quando algo muda na config dele. Uma
+ *    sessao que carregou o arquivo antes da nossa instalacao apaga a nossa
+ *    chave ao regravar. Ver issue #3.
+ *
+ * O segundo caso e traicoeiro porque nao da erro: sessoes antigas continuam
+ * chamando o bridge de memoria, entao os dados so somem quando a ultima delas
+ * fecha -- horas depois, sem nada apontando pra causa.
+ *
+ * @param wanted o usuario pediu a conexao? Vem de `config.bridgeWanted`.
+ *               Sem isso nao daria pra distinguir "apagaram" de "o usuario
+ *               desconectou de proposito", e o app ficaria reinstalando por
+ *               cima da decisao dele.
  */
-function refresh() {
+function refresh(wanted = false) {
   const state = status();
-  if (!state.ok || !state.installed) return state;
+  if (!state.ok) return state;
+
+  // Sumiu, mas o usuario queria conectado: reinstala.
+  // Nunca por cima de um statusLine de terceiro -- isso continua sendo dele.
+  if (wanted && !state.installed && !state.foreign) {
+    const result = install();
+    return result.ok ? { ...status(), reconnected: true } : { ...state, error: result.reason };
+  }
+
+  if (!state.installed) return state;
 
   writeShim();
   if (state.stale) {

@@ -162,11 +162,37 @@ function sendSettings(channel, payload) {
   if (settingsWin && !settingsWin.isDestroyed()) settingsWin.webContents.send(channel, payload);
 }
 
+// --------------------------------------------------------- saude do bridge
+
+let lastReconnectAt = null;
+
+/** Reinstala o statusLine se ele sumir sem o usuario ter pedido. */
+function keepBridgeAlive() {
+  const state = bridge.refresh(config.bridgeWanted === true);
+
+  if (state.reconnected) {
+    lastReconnectAt = Date.now();
+    console.error('[perch] statusLine tinha sumido do settings.json; reconectado');
+  } else if (state.repaired) {
+    console.error('[perch] statusLine apontava pro lugar errado; corrigido');
+  } else {
+    return;
+  }
+
+  pushState();
+  sendSettings('settings:changed', { config, shortcuts: activeShortcuts, bridge: bridgeStatus() });
+}
+
+/** Status do bridge com o carimbo da última reconexão automática. */
+function bridgeStatus() {
+  return { ...bridge.status(), wanted: config.bridgeWanted === true, lastReconnectAt };
+}
+
 // ---------------------------------------------------------------- estado
 
 function pushState() {
   const snapshot = lastSnapshot || usage.snapshot;
-  const status = bridge.status();
+  const status = bridgeStatus();
   send('island:state', {
     ...snapshot,
     history,
@@ -258,7 +284,7 @@ function updateConfig(patch) {
 
   if (tray) tray.setContextMenu(buildTrayMenu());
   pushState();
-  sendSettings('settings:changed', { config, shortcuts: activeShortcuts, bridge: bridge.status() });
+  sendSettings('settings:changed', { config, shortcuts: activeShortcuts, bridge: bridgeStatus() });
 }
 
 function createTray() {
@@ -346,13 +372,12 @@ if (!gotLock) {
   app.whenReady().then(() => {
     // Traz dados da pasta do nome antigo, se houver.
     migrateLegacy();
-    // Mantem o shim e o settings.json apontando pro lugar certo -- sem isto,
-    // atualizar ou mover o app deixaria o Claude Code chamando um caminho morto
-    // e a ilha ficaria muda sem explicar por que.
-    const repaired = bridge.refresh();
-    if (repaired && repaired.repaired) {
-      console.error('[perch] statusLine apontava pro lugar errado; corrigido');
-    }
+    keepBridgeAlive();
+    // O settings.json tem dois escritores: o Claude Code regrava o arquivo
+    // inteiro quando a config dele muda, e leva a nossa chave junto. Isso
+    // acontece com o Perch ja rodando, entao verificar so na inicializacao nao
+    // resolve. E uma leitura de arquivo pequeno por minuto. Ver issue #3.
+    setInterval(keepBridgeAlive, 60_000);
 
     createWindow();
     // Registra antes da bandeja: o menu mostra qual atalho ficou valendo.
@@ -455,14 +480,20 @@ if (!gotLock) {
     config,
     shortcuts: activeShortcuts,
     defaults: configStore.DEFAULTS,
-    bridge: bridge.status(),
+    bridge: bridgeStatus(),
     version: app.getVersion(),
   }));
 
   ipcMain.handle('settings:bridge', (_event, action) => {
-    const result = action === 'install' ? bridge.install() : action === 'force' ? bridge.install({ force: true }) : bridge.uninstall();
+    const result =
+      action === 'install' ? bridge.install() : action === 'force' ? bridge.install({ force: true }) : bridge.uninstall();
+
+    // Registra a intencao, nao o resultado: e ela que autoriza o autoconserto
+    // quando outro processo apaga a entrada do settings.json (issue #3).
+    if (result.ok) updateConfig({ bridgeWanted: action !== 'uninstall' });
+
     pushState();
-    sendSettings('settings:changed', { config, shortcuts: activeShortcuts, bridge: bridge.status() });
+    sendSettings('settings:changed', { config, shortcuts: activeShortcuts, bridge: bridgeStatus() });
     return result;
   });
   ipcMain.on('settings:set', (_event, patch) => updateConfig(patch || {}));

@@ -179,7 +179,14 @@ function paintBridge() {
   }
 
   if (bridge.installed) {
-    hint.textContent = bridge.stale ? 'instalado, mas apontando pro lugar errado' : 'conectado — os números chegam por aqui';
+    // Reconexão automática precisa aparecer. Se a entrada some e volta sem
+    // dizer nada, o usuário não tem como saber que houve um buraco nos dados.
+    const reconnected = bridge.lastReconnectAt && Date.now() - bridge.lastReconnectAt < 6 * 60 * 60 * 1000;
+    if (bridge.stale) hint.textContent = 'instalado, mas apontando pro lugar errado';
+    else if (reconnected) {
+      const min = Math.round((Date.now() - bridge.lastReconnectAt) / 60000);
+      hint.textContent = `conectado — a entrada tinha sumido e foi reposta há ${min < 1 ? 'instantes' : `${min} min`}`;
+    } else hint.textContent = 'conectado — os números chegam por aqui';
     button.textContent = 'desconectar';
     button.classList.add('is-on');
     return;
