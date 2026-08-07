@@ -20,6 +20,7 @@
  */
 
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const { app } = require('electron');
 const { SETTINGS_FILE, STATE_DIR } = require('./paths');
@@ -40,6 +41,26 @@ const OWN_MARKERS = ['Perch\\statusline.cmd', 'perch', 'claude-island', 'bridge/
 function isOurs(command) {
   const lower = String(command).toLowerCase();
   return OWN_MARKERS.some((marker) => lower.includes(marker.toLowerCase()));
+}
+
+/**
+ * O executavel esta rodando de um diretorio temporario?
+ *
+ * A versao PORTATIL se extrai num diretorio aleatorio dentro do %TEMP% a cada
+ * execucao, e o apaga ao fechar. Um shim apontando pra la funciona enquanto o
+ * app esta aberto e morre depois -- sem erro, sem aviso, e o autoconserto nao
+ * salva porque ele so roda com o app aberto.
+ *
+ * Pior: abrir o portatil uma unica vez CORROMPE uma instalacao que estava boa,
+ * porque `refresh()` reescreve o shim apontando pro temporario.
+ *
+ * Por isso o portatil nao instala nem regrava o bridge. Quem quer a conexao
+ * usa o instalador, que tem caminho fixo.
+ */
+function isEphemeral() {
+  if (!app.isPackaged) return false; // em desenvolvimento o caminho e estavel
+  const tmp = path.resolve(os.tmpdir()).toLowerCase();
+  return path.resolve(process.execPath).toLowerCase().startsWith(tmp);
 }
 
 /** Caminho real do script, dentro ou fora do pacote. */
@@ -94,6 +115,8 @@ function writeSettings(settings) {
 
 /** Regrava o shim se o conteudo mudou (app movido, atualizado, etc). */
 function writeShim() {
+  // Nunca apontar pro diretorio temporario do portatil: ele some ao fechar.
+  if (isEphemeral()) return false;
   fs.mkdirSync(STATE_DIR, { recursive: true });
   const wanted = shimContents();
   try {
@@ -119,20 +142,25 @@ function status() {
     return { ok: false, reason: 'settings-ilegivel', detail: err.message };
   }
 
+  const ephemeral = isEphemeral();
+
   const current = settings.statusLine;
   if (!current || typeof current.command !== 'string') {
-    return { ok: true, installed: false, foreign: false, stale: false };
+    return { ok: true, installed: false, foreign: false, stale: false, ephemeral };
   }
 
   if (!isOurs(current.command)) {
-    return { ok: true, installed: false, foreign: true, command: current.command };
+    return { ok: true, installed: false, foreign: true, ephemeral, command: current.command };
   }
 
   return {
     ok: true,
     installed: true,
     foreign: false,
-    stale: current.command !== expectedCommand(),
+    ephemeral,
+    // Rodando do temporário, o shim não é reescrito — então não faz sentido
+    // marcar como desatualizado algo que não vamos consertar.
+    stale: !ephemeral && current.command !== expectedCommand(),
     command: current.command,
   };
 }
@@ -140,6 +168,8 @@ function status() {
 function install({ force = false } = {}) {
   const state = status();
   if (!state.ok) return state;
+  // Instalar daqui gravaria um caminho que some quando o app fechar.
+  if (state.ephemeral) return { ok: false, reason: 'executavel-temporario' };
   if (state.foreign && !force) return { ok: false, reason: 'statusline-de-terceiro', command: state.command };
 
   const settings = readSettings();
@@ -197,6 +227,11 @@ function uninstall() {
 function refresh(wanted = false) {
   const state = status();
   if (!state.ok) return state;
+
+  // Rodando do temporario (portatil): nao mexe em nada. Reinstalar ou regravar
+  // o shim daqui apontaria pra um caminho que morre ao fechar o app -- e
+  // estragaria uma instalacao que estava funcionando.
+  if (state.ephemeral) return state;
 
   // Sumiu, mas o usuario queria conectado: reinstala.
   // Nunca por cima de um statusLine de terceiro -- isso continua sendo dele.
