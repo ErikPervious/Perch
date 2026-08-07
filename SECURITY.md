@@ -27,12 +27,38 @@ Antes de tocar no `settings.json` ele faz uma cópia com timestamp em
 automaticamente. Se já existir um `statusLine` seu, o app avisa e **não**
 sobrescreve.
 
+## A única requisição de rede
+
+O app faz **uma** conexão, e só para verificar se há versão nova:
+
+```
+GET https://api.github.com/repos/ErikPervious/Perch/releases/latest
+```
+
+É um GET anônimo, sem token, no mesmo endereço que qualquer pessoa abriria no
+navegador. **Nada é enviado**: nenhum identificador, nenhum dado de uso,
+nenhuma informação sobre sua cota, nenhuma credencial. A requisição não carrega
+nada além do cabeçalho `User-Agent` com o nome e a versão do app.
+
+Ela acontece 20 segundos após abrir e depois a cada 6 horas. Dá para desligar
+em **Configurações → Atualizações**, e aí o app não fala com ninguém.
+
+O código inteiro que faz isso está em
+[`src/main/updates.js`](src/main/updates.js), num arquivo só, e é o único lugar
+do projeto onde a palavra `fetch` aparece fora do renderizador:
+
+```bash
+git grep -nE "fetch\(|require\('https?'\)" src bridge
+```
+
 ## O que ele não faz
 
-- **Não faz nenhuma requisição de rede.** O código não tem `fetch`, nem `http`,
-  nem `https`. Dá para conferir: `git grep -nE "fetch\(|require\('https?'\)" src bridge`.
+- **Não envia nada.** A verificação de versão é só leitura.
 - **Não lê `~/.claude/.credentials.json`** nem qualquer token, chave ou senha.
 - **Não tem telemetria**, analytics ou relatório de erro remoto.
+- **Não baixa nem executa nada sozinho.** Ao encontrar versão nova, ele mostra
+  o que mudou e abre a página da release no seu navegador. Quem baixa e instala
+  é você.
 - **Não tem dependências em runtime.** O `package.json` tem `dependencies`
   vazio; só Electron e electron-builder em desenvolvimento.
 

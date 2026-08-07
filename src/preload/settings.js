@@ -19,6 +19,10 @@ contextBridge.exposeInMainWorld('settings', {
   /** 'install' | 'force' | 'uninstall' -- mexe no statusLine do Claude Code. */
   bridge: (action) => ipcRenderer.invoke('settings:bridge', action),
 
+  /** Consulta a API de releases do GitHub agora, sem esperar o ciclo de 6h. */
+  checkUpdates: () => ipcRenderer.invoke('settings:check-updates'),
+  openRelease: () => ipcRenderer.send('settings:open-release'),
+
   close: () => ipcRenderer.send('settings:close'),
   openDataFolder: () => ipcRenderer.send('settings:open-data'),
 

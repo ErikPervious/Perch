@@ -6,6 +6,38 @@ disponível — então escreva pensando em quem vai ler antes de decidir se baix
 
 ## [Não publicado]
 
+## [1.0.1] — 2026-08-07
+
+### Adicionado
+
+- Verificação de novas versões. Quando há atualização, o painel mostra **o que
+  mudou antes de você baixar** — as notas da release renderizadas ali mesmo,
+  já que o instalador do Windows não tem tela de changelog. O aviso na ilha
+  aparece uma vez por versão e respeita a faixa de horários configurada.
+  Desligável em Configurações → Atualizações.
+- Verificação de sintaxe e de invariantes rodando em todo pull request, mais
+  build do Windows. As releases passam a ser compiladas pelo CI a partir de uma
+  cópia limpa, em vez da máquina do autor.
+
+### Corrigido
+
+- O `statusLine` sumia do `settings.json` sem ninguém pedir. O Claude Code
+  regrava aquele arquivo inteiro quando a config dele muda, e uma sessão que o
+  carregou antes da instalação levava a nossa entrada junto. O sintoma não dava
+  erro: sessões antigas seguiam invocando o bridge de memória, e os dados só
+  paravam horas depois. Agora o app repõe a entrada sozinho, verifica a cada
+  minuto e avisa no painel quando reconectou.
+
+### Segurança
+
+- Electron atualizado de 33.4.11 para 39.8.10, corrigindo 15 alertas — 3 de
+  severidade alta.
+
+### Notas
+
+- A verificação de versão é a primeira e única requisição de rede do app: um
+  GET anônimo na API pública de releases do GitHub, sem enviar nada.
+
 ## [1.0.0] — 2026-08-07
 
 Primeira versão pública.
@@ -41,5 +73,6 @@ Primeira versão pública.
 - O bridge roda pelo próprio executável em modo Node, então **o app não exige
   Node instalado**.
 
-[Não publicado]: https://github.com/ErikPervious/Perch/compare/v1.0.0...HEAD
+[Não publicado]: https://github.com/ErikPervious/Perch/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/ErikPervious/Perch/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/ErikPervious/Perch/releases/tag/v1.0.0
