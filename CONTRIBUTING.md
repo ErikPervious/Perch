@@ -27,14 +27,22 @@ Para compilar o instalador: `npm run build`.
 
 ## Verificação
 
-Não há suíte de testes automatizados — seja honesto sobre isso no seu PR.
-O que existe:
+Não há suíte de testes de comportamento — seja honesto sobre isso no seu PR.
+O que existe, e o que o CI roda em todo PR:
 
 ```bash
-node --check <arquivo>     # CJS; para os módulos ES, copie para .mjs antes
-node scripts/make-icon.js  # valida o encoder de ícone
-npm run build              # valida o schema do electron-builder
+node scripts/check.js
 ```
+
+Ele confere a sintaxe de todo o JS (inclusive os módulos ES do renderer, que o
+`node --check` trataria como CommonJS) e valida as **invariantes de pares** —
+valores duplicados de propósito em arquivos diferentes que precisam continuar
+batendo, como a geometria dos olhos do bicho entre `critter.js` e o SVG em
+`index.html`. Nada no runtime reclama quando divergem: o bicho só passa a olhar
+torto.
+
+O CI também compila no Windows em todo PR, então quebra de build aparece antes
+do merge.
 
 Mudou animação? **Meça**, não estime:
 
