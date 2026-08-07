@@ -11,8 +11,8 @@
     "dev": "electron .",
     "icon": "node scripts/make-icon.js",
     "prebuild": "node scripts/make-icon.js",
-    "build": "electron-builder --win",
-    "build:portable": "electron-builder --win portable",
+    "build": "electron-builder --win --publish never",
+    "build:portable": "electron-builder --win portable --publish never",
     "pack": "electron-builder --dir"
   },
   "devDependencies": {
