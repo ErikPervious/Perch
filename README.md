@@ -405,24 +405,28 @@ parado. A trajetória passa longe dele até os 9s e se aproxima uma vez só —
 na primeira tentativa o arco passava perto o tempo todo e ele ficava escondido
 no vídeo inteiro.
 
-#### Captura sem instalar nada
+#### Capturador próprio
 
-Há também um capturador próprio, útil quando não se quer instalar gravador:
+Há também um capturador no repositório, que dispensa gravador externo:
 
 ```bash
-powershell -ExecutionPolicy Bypass -File scripts/record-reel.ps1 -Seconds 20
-node scripts/encode-gif.js --scale 0.6 --from 50 --to 362
+powershell -ExecutionPolicy Bypass -File scripts/record-reel.ps1
+node scripts/encode-mp4.js --from 203 --to 1190 --crf 16
 ```
 
-Ele grava BGRA cru — codificar PNG dentro do laço derruba a taxa para uns
-10fps, e a mola vive nos primeiros 200ms de cada morph. Assim chega a 20fps.
-O tempo de boot varia, então grave com folga e apare por índice de frame com
-`--from` e `--to`; `scripts/timeline` não existe, mas contar pixels claros por
-frame localiza as transições sem chutar.
+Grava BGRA cru a **60fps** — codificar PNG dentro do laço derrubaria para uns
+10fps, e a mola vive nos primeiros 200ms de cada morph, que é onde a taxa
+importa. São ~100MB de frames crus por segundo de vídeo; confira o disco antes.
 
-Fica abaixo de um gravador dedicado: 20fps contra 60, e o GIF tem paleta de
-256 cores. Serve para conferir animação durante o desenvolvimento, não para
-publicar.
+O `encode-mp4.js` precisa de ffmpeg instalado (`winget install Gyan.FFmpeg`) e
+produz H.264. Sem ffmpeg, o `encode-gif.js` funciona sem dependência nenhuma,
+mas a paleta de 256 cores do GIF arruína os degradês e o neon — serve para
+conferir animação durante o desenvolvimento, não para publicar.
+
+O tempo de boot varia, então grave com folga e apare por índice de frame. Para
+achar os cortes sem chutar, meça: com o papel de parede visível, contar pixels
+claros não distingue nada, mas a **diferença entre frames consecutivos** isola
+a ilha, já que o fundo é estático.
 
 ### Compilar
 
