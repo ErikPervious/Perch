@@ -1,0 +1,15 @@
+node_modules/
+
+# Saída do electron-builder: o instalador e o portátil vão em Releases,
+# não versionados aqui.
+dist/
+
+# Ícones são gerados por código — `npm run icon` (ou o prebuild) recria.
+build/
+
+*.log
+npm-debug.log*
+
+Thumbs.db
+desktop.ini
+.DS_Store

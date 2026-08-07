@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:;" />
+    <title>Perch — Configurações</title>
+    <link rel="stylesheet" href="settings.css" />
+  </head>
+  <body>
+    <main class="panel">
+      <header class="panel__head">
+        <div class="brand">
+          <span class="brand__pill"><i></i></span>
+          <div>
+            <h1>Perch</h1>
+            <p data-role="subtitle">configurações</p>
+          </div>
+        </div>
+        <button class="icon-btn" data-action="close" title="Fechar" aria-label="Fechar">
+          <svg viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M4 4 L12 12 M12 4 L4 12" />
+          </svg>
+        </button>
+      </header>
+
+      <div class="panel__body">
+        <!-- ---------------------------------------------------- bridge -->
+        <section class="group">
+          <h2 class="group__title">Conexão com o Claude Code</h2>
+          <p class="group__note">
+            A porcentagem real não fica salva em disco — o Claude Code busca e
+            descarta. O bridge se registra como <code>statusLine</code> e é assim
+            que o número chega aqui. Nada sai da máquina, nenhuma credencial é lida.
+          </p>
+
+          <div class="row">
+            <div class="row__text">
+              <span class="row__label">Estado</span>
+              <span class="row__hint" data-role="bridge-hint">verificando…</span>
+            </div>
+            <button class="action" data-action="bridge-toggle">—</button>
+          </div>
+        </section>
+
+        <!-- ------------------------------------------------- aparencia -->
+        <section class="group">
+          <h2 class="group__title">Aparência</h2>
+
+          <div class="row">
+            <div class="row__text">
+              <span class="row__label">Tema</span>
+              <span class="row__hint">a ilha é preta por padrão, como o hardware</span>
+            </div>
+            <div class="segment" data-segment="theme">
+              <button data-value="dark">Escuro</button>
+              <button data-value="light">Claro</button>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="row__text">
+              <span class="row__label">Formato padrão</span>
+              <span class="row__hint" data-role="hint-format">o que o atalho abre; o hover sempre expande</span>
+            </div>
+            <div class="segment" data-segment="format">
+              <button data-value="card">Card</button>
+              <button data-value="bar">Barra</button>
+              <button data-value="pill">Pílula</button>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="row__text">
+              <span class="row__label">Monitor</span>
+              <span class="row__hint">em qual tela a ilha aparece</span>
+            </div>
+            <div class="segment" data-segment="display">
+              <button data-value="primary">Principal</button>
+              <button data-value="cursor">Do cursor</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- --------------------------------------------------- atalhos -->
+        <section class="group">
+          <h2 class="group__title">Atalhos</h2>
+          <p class="group__note">
+            Clique e pressione a combinação. Três teclas evitam conflito — mas
+            no teclado ABNT2 o <b>AltGr é Ctrl+Alt</b>, então combinações com
+            <code>Q W E C 1 2 3</code> roubam caracteres da digitação.
+          </p>
+
+          <div class="row">
+            <div class="row__text">
+              <span class="row__label">Abrir / recolher</span>
+              <span class="row__hint" data-role="hint-shortcut">—</span>
+            </div>
+            <button class="recorder" data-shortcut="shortcut">—</button>
+          </div>
+
+          <div class="row">
+            <div class="row__text">
+              <span class="row__label">Abrir nos detalhes</span>
+              <span class="row__hint" data-role="hint-detailShortcut">—</span>
+            </div>
+            <button class="recorder" data-shortcut="detailShortcut">—</button>
+          </div>
+
+          <div class="row">
+            <div class="row__text">
+              <span class="row__label">Trocar formato</span>
+              <span class="row__hint" data-role="hint-formatShortcut">—</span>
+            </div>
+            <button class="recorder" data-shortcut="formatShortcut">—</button>
+          </div>
+        </section>
+
+        <!-- ---------------------------------------------- comportamento -->
+        <section class="group">
+          <h2 class="group__title">Comportamento</h2>
+
+          <div class="row">
+            <div class="row__text">
+              <span class="row__label">Descer sozinha nos alertas</span>
+              <span class="row__hint">50%, 75%, 90%, 95% e ritmo anômalo</span>
+            </div>
+            <button class="switch" data-switch="autoDrop" role="switch"><i></i></button>
+          </div>
+
+          <div class="row">
+            <div class="row__text">
+              <span class="row__label">Pílula visível quando ocioso</span>
+              <span class="row__hint">deixa um resumo mínimo sempre na tela</span>
+            </div>
+            <button class="switch" data-switch="idleVisible" role="switch"><i></i></button>
+          </div>
+
+          <div class="row">
+            <div class="row__text">
+              <span class="row__label">Live Activity</span>
+              <span class="row__hint">waveform enquanto o Claude está gerando</span>
+            </div>
+            <button class="switch" data-switch="liveActivity" role="switch"><i></i></button>
+          </div>
+
+          <div class="row">
+            <div class="row__text">
+              <span class="row__label">Tempo na tela</span>
+              <span class="row__hint">quanto um alerta fica antes de recolher</span>
+            </div>
+            <div class="stepper">
+              <input type="range" min="2000" max="12000" step="200" data-range="peekMs" />
+              <span class="stepper__value num" data-role="peekMs-value">—</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- ---------------------------------------------------- o bicho -->
+        <section class="group">
+          <h2 class="group__title">O bicho</h2>
+
+          <div class="row">
+            <div class="row__text">
+              <span class="row__label">Mostrar</span>
+              <span class="row__hint">espia da borda de cima, ao lado da ilha</span>
+            </div>
+            <button class="switch" data-switch="critter" role="switch"><i></i></button>
+          </div>
+
+          <div class="row">
+            <div class="row__text">
+              <span class="row__label">Espiar sozinho</span>
+              <span class="row__hint">aparecer mesmo com a ilha escondida</span>
+            </div>
+            <button class="switch" data-switch="critterAuto" role="switch"><i></i></button>
+          </div>
+
+          <div class="row">
+            <div class="row__text">
+              <span class="row__label">Fugir do mouse</span>
+              <span class="row__hint">se esconde quando o cursor chega perto</span>
+            </div>
+            <button class="switch" data-switch="critterShy" role="switch"><i></i></button>
+          </div>
+        </section>
+
+        <!-- --------------------------------------------------- horarios -->
+        <section class="group">
+          <h2 class="group__title">Horários</h2>
+          <p class="group__note">
+            Vale só para aparições automáticas. O atalho funciona sempre.
+          </p>
+
+          <div class="row">
+            <div class="row__text">
+              <span class="row__label">Restringir horário</span>
+              <span class="row__hint" data-role="schedule-summary">sem restrição</span>
+            </div>
+            <button class="switch" data-switch="schedule.enabled" role="switch"><i></i></button>
+          </div>
+
+          <div class="row" data-role="schedule-fields">
+            <div class="row__text">
+              <span class="row__label">Faixa</span>
+              <span class="row__hint">pode atravessar a meia-noite</span>
+            </div>
+            <div class="times">
+              <input type="time" data-time="schedule.from" />
+              <span class="times__sep">até</span>
+              <input type="time" data-time="schedule.to" />
+            </div>
+          </div>
+
+          <div class="row row--stack" data-role="schedule-days">
+            <span class="row__label">Dias</span>
+            <div class="chips" data-days>
+              <button data-day="0">dom</button>
+              <button data-day="1">seg</button>
+              <button data-day="2">ter</button>
+              <button data-day="3">qua</button>
+              <button data-day="4">qui</button>
+              <button data-day="5">sex</button>
+              <button data-day="6">sáb</button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <footer class="panel__foot">
+        <button class="link" data-action="open-data">Abrir pasta de dados</button>
+        <span class="foot__spacer"></span>
+        <span class="foot__note" data-role="saved">salva automaticamente</span>
+      </footer>
+    </main>
+
+    <script type="module" src="settings.js"></script>
+  </body>
+</html>

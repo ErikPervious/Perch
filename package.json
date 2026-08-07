@@ -1,0 +1,62 @@
+{
+  "name": "perch",
+  "productName": "Perch",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Ilha animada no topo da tela com o uso da sua sessão do Claude Code.",
+  "author": "Erick",
+  "main": "src/main/index.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "icon": "node scripts/make-icon.js",
+    "prebuild": "node scripts/make-icon.js",
+    "build": "electron-builder --win",
+    "build:portable": "electron-builder --win portable",
+    "pack": "electron-builder --dir"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^26.0.0"
+  },
+  "build": {
+    "appId": "app.perch.desktop",
+    "productName": "Perch",
+    "copyright": "Copyright © 2026 Erick",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "bridge",
+        "to": "bridge",
+        "filter": ["**/*"]
+      }
+    ],
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Perch",
+      "artifactName": "Perch-${version}-instalador.${ext}",
+      "uninstallDisplayName": "Perch"
+    },
+    "portable": {
+      "artifactName": "Perch-${version}-portatil.${ext}"
+    }
+  }
+}

@@ -1,0 +1,818 @@
+/* =========================================================================
+   Perch
+   A janela e transparente e do tamanho maximo que a ilha pode ocupar.
+   Toda geometria vem de CSS vars escritas pelo loop de molas em island.js:
+     --w --h --r   tamanho e raio do corpo
+     --x --y       deslocamento (y negativo = escondida acima da tela)
+     --o           opacidade geral
+     --tone        cor do estado atual
+     --glow        intensidade do brilho por tras (0..1)
+   ========================================================================= */
+
+:root {
+  --w: 176px;
+  --h: 36px;
+  --r: 18px;
+  --x: 0px;
+  --y: -70px;
+  --o: 0;
+  --tone: #30d158;
+  --glow: 0;
+
+  --ink: rgba(255, 255, 255, 0.94);
+  --ink-2: rgba(255, 255, 255, 0.58);
+  --ink-3: rgba(255, 255, 255, 0.34);
+  --hairline: rgba(255, 255, 255, 0.06);
+
+  --body: #000;
+  --rim: rgba(255, 255, 255, 0.11);
+  --rim-2: rgba(255, 255, 255, 0.05);
+  --track: rgba(255, 255, 255, 0.1);
+  --surface: rgba(255, 255, 255, 0.045);
+  --surface-2: rgba(255, 255, 255, 0.09);
+  --shadow: 0 18px 48px -10px rgba(0, 0, 0, 0.78), 0 6px 16px rgba(0, 0, 0, 0.5);
+
+  --font: 'Segoe UI Variable Display', 'SF Pro Display', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --ease: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* Tema claro: corpo branco de verdade, nao um cinza indeciso. A tinta inverte
+   junto, senao o texto some. O bicho acompanha o corpo. */
+:root[data-theme='light'] {
+  --body: #fbfbfd;
+  --ink: rgba(0, 0, 0, 0.9);
+  --ink-2: rgba(0, 0, 0, 0.55);
+  --ink-3: rgba(0, 0, 0, 0.36);
+  --rim: rgba(0, 0, 0, 0.06);
+  --rim-2: rgba(0, 0, 0, 0.08);
+  --track: rgba(0, 0, 0, 0.1);
+  --surface: rgba(0, 0, 0, 0.04);
+  --surface-2: rgba(0, 0, 0, 0.08);
+  --shadow: 0 18px 44px -12px rgba(0, 0, 0, 0.34), 0 4px 12px rgba(0, 0, 0, 0.16);
+}
+
+/* No tema claro o corpo e branco, entao o branco do olho sumiria. Um fio
+   escuro em volta resolve sem inverter a cara do bicho. */
+:root[data-theme='light'] .critter__white {
+  stroke: rgba(0, 0, 0, 0.2);
+  stroke-width: 0.8;
+}
+
+:root[data-theme='light'] #bubble {
+  background: var(--body);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font);
+  color: var(--ink);
+  user-select: none;
+  cursor: default;
+  -webkit-user-drag: none;
+}
+
+.defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* ---------------------------------------------------------------- palco */
+
+#stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* Geometria compartilhada: corpo e conteudo mudam de tamanho de verdade,
+   porque o raio de canto e a linha de luz nao sobrevivem a um scale. */
+#shell,
+#content {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: var(--w);
+  height: var(--h);
+  border-radius: var(--r);
+  transform: translate(calc(-50% + var(--x)), var(--y));
+  opacity: var(--o);
+  will-change: width, height, transform;
+}
+
+/* ---------------------------------------------------------------- corpo */
+
+#goo {
+  position: absolute;
+  inset: 0;
+}
+
+/* O filtro so entra em cena durante o morph com a bolha: blur em elemento
+   animado e caro, e ligado o tempo todo derruba o frame rate. */
+#goo.is-gooing {
+  filter: url(#goo);
+}
+
+#shell {
+  background: var(--body);
+  /* A linha clara no topo e o que faz o preto parecer hardware, e nao um
+     retangulo. Sem ela a ilha some no fundo escuro. */
+  box-shadow:
+    inset 0 0.5px 0 var(--rim),
+    inset 0 0 0 0.5px var(--rim-2),
+    var(--shadow);
+}
+
+/* Bolha destacada que se funde no corpo quando o alerta chega. */
+#bubble {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #000;
+  opacity: 0;
+  transform: translate(calc(-50% + var(--bubble-x, 0px)), var(--bubble-y, 0px)) scale(var(--bubble-s, 0.4));
+  will-change: transform, opacity;
+}
+
+/* ----------------------------------------------------------------- bicho */
+
+#critter {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  /* Igual ao viewBox de proposito: 1 unidade de SVG = 1 pixel de tela, entao
+     o calculo do olhar em island.js nao precisa converter escala. */
+  width: 48px;
+  height: 48px;
+  /* Pivo no topo: ele balanca pendurado na borda da tela, como pendulo.
+     O X acompanha a largura da ilha, com uma folga -- colado demais ele
+     parecia parte do card. O Y e quanto ele desce pra dentro da tela, e quem
+     manda nele e a mola de "espiar" em critter.js: o topo da janela corta o
+     resto do corpo, entao so a fresta de cima aparece.
+     Sem opacidade: quem esconde e a posicao, nao o fade. */
+  transform-origin: 50% 0;
+  transform: translate(calc(-50% + var(--x) + var(--w) / 2 + var(--critter-dx, 44px)), var(--critter-y, -54px))
+    rotate(var(--critter-rot, 0deg));
+  pointer-events: none;
+  overflow: visible;
+  will-change: transform;
+  z-index: -1; /* atras da ilha, entao ele parece espiar por tras */
+}
+
+.critter__body,
+.critter__ear {
+  fill: var(--body);
+}
+
+.critter__rim {
+  fill: none;
+  stroke: var(--rim);
+  stroke-width: 0.9;
+}
+
+.critter__white {
+  fill: #f1f2f6;
+}
+
+.critter__pupil {
+  fill: #0a0a0c;
+}
+
+/* O brilho tem tamanho FIXO e so e esticado por `scale`.
+   Ele carrega um blur de 22px -- redimensionar um elemento borrado obriga o
+   compositor a repintar o blur inteiro a cada frame, que e de longe a operacao
+   mais cara desta tela. Com scale, ele vira uma textura que a GPU so estica.
+   O olho nao distingue um blur esticado de um blur recalculado. */
+#glow {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 400px;
+  height: 140px;
+  border-radius: 70px;
+  background: radial-gradient(60% 140% at 50% 0%, var(--tone), transparent 72%);
+  filter: blur(22px);
+  opacity: calc(var(--o) * var(--glow) * 0.55);
+  transform-origin: 50% 0;
+  transform: translate(calc(-50% + var(--x)), calc(var(--y) + 6px))
+    scale(var(--glow-sx, 1), var(--glow-sy, 1));
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+/* ------------------------------------------------------------ conteudo */
+
+#content {
+  overflow: hidden;
+}
+
+/* ----------------------------------------------------------- engrenagem */
+
+/* Discreta de proposito: invisivel ate o mouse chegar, e mesmo entao fica a
+   meio tom. So aparece nos formatos que tem altura sobrando -- na pilula e na
+   barra ela brigaria com o conteudo. */
+#gear {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ink-3);
+  cursor: pointer;
+  opacity: 0;
+  transform: scale(0.8) rotate(-25deg);
+  pointer-events: none;
+  z-index: 3;
+  transition:
+    opacity 0.22s var(--ease),
+    transform 0.32s var(--ease),
+    color 0.2s,
+    background 0.2s;
+}
+
+#content.can-gear.is-hovering #gear {
+  opacity: 0.42;
+  transform: none;
+  pointer-events: auto;
+}
+
+#content.can-gear.is-hovering #gear:hover {
+  opacity: 1;
+  color: var(--ink);
+  background: var(--surface-2);
+  transform: rotate(38deg);
+}
+
+#gear svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---------------------------------------------------------------- barra */
+
+/* O corpo da ilha e a pista da barra; o preenchimento cresce por dentro dele. */
+[data-layer='bar'] {
+  padding: 0;
+}
+
+.barline__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0%;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--tone) 14%, transparent),
+    color-mix(in srgb, var(--tone) 34%, transparent)
+  );
+  transition: width 0.55s var(--ease);
+}
+
+/* Fio aceso na ponta do preenchimento: e ele que da a leitura instantanea de
+   "estou aqui", sem precisar comparar bordas. */
+.barline__head {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 0%;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 2px;
+  background: var(--tone);
+  box-shadow: 0 0 9px var(--tone);
+  transition: left 0.55s var(--ease);
+}
+
+.barline__text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 14px;
+  z-index: 2;
+}
+
+.barline__pct {
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--ink);
+}
+
+.barline__label {
+  font-size: 11px;
+  color: var(--ink-2);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.barline__reset {
+  font-size: 11px;
+  font-weight: 550;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  opacity: 0;
+  transform: scale(0.94) translateY(5px);
+  pointer-events: none;
+  transition:
+    opacity 0.15s linear,
+    transform 0.3s var(--ease);
+}
+
+.layer.is-active {
+  opacity: 1;
+  transform: none;
+}
+
+/* ---------------------------------------------------------------- pilula */
+
+[data-layer='pill'] {
+  gap: 8px;
+  padding: 0 13px;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--tone);
+  box-shadow: 0 0 9px var(--tone);
+  flex: none;
+  animation: breathe 2.6s var(--ease) infinite;
+}
+
+.dot--idle {
+  background: var(--ink-3);
+  box-shadow: none;
+  animation: none;
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(0.85);
+  }
+}
+
+.pill-pct {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-right: auto;
+}
+
+/* ------------------------------------------------------------- waveform */
+
+.wave {
+  display: flex;
+  align-items: center;
+  gap: 2.5px;
+  height: 16px;
+  flex: none;
+}
+
+.wave i {
+  display: block;
+  width: 2.5px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--tone);
+  opacity: 0.9;
+}
+
+.wave--corner {
+  position: absolute;
+  right: 14px;
+  bottom: 11px;
+  height: 12px;
+}
+
+/* ------------------------------------------------------------- expandido */
+
+/* Folga maior que o normal a direita do anel: o neon precisa de ar antes do
+   texto, senao o halo parece esbarrar em alguma coisa. */
+[data-layer='expanded'] {
+  gap: 18px;
+  padding: 0 20px 0 16px;
+}
+
+.ring-wrap {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  flex: none;
+}
+
+.ring-wrap--sm {
+  width: 54px;
+  height: 54px;
+}
+
+.ring {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+  /* SVG recorta no viewport por padrao. Sem isto o neon do anel encosta na
+     borda e aparece cortado reto -- justamente do lado onde ha texto preto
+     em volta, que e onde o corte fica obvio. */
+  overflow: visible;
+}
+
+.ring__track,
+.ring__value {
+  fill: none;
+  stroke-width: 5;
+}
+
+.ring__track {
+  stroke: var(--track);
+}
+
+.ring__value {
+  stroke: var(--tone);
+  stroke-linecap: round;
+  /* Dois halos: um curto e firme colado no traco, outro largo e fraco pra dar
+     o esparramado do neon. Um drop-shadow so ou fica duro ou fica sujo. */
+  filter: drop-shadow(0 0 3px var(--tone)) drop-shadow(0 0 8px color-mix(in srgb, var(--tone) 45%, transparent));
+}
+
+.ring__label {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.ring-wrap--sm .ring__label {
+  font-size: 12.5px;
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.col--main {
+  flex: 1;
+}
+
+.col--right {
+  flex: none;
+  width: 120px;
+  gap: 7px;
+}
+
+.eyebrow {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.headline {
+  font-size: 14px;
+  font-weight: 550;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sub {
+  font-size: 11.5px;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+/* -------------------------------------------------------------- sparkline */
+
+.spark {
+  width: 100%;
+  height: 34px;
+  display: block;
+}
+
+.spark__line {
+  fill: none;
+  stroke: var(--tone);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.spark__fill {
+  fill: var(--tone);
+  opacity: 0.16;
+  stroke: none;
+}
+
+/* ----------------------------------------------------------------- meter */
+
+.meter {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.meter__label {
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--ink-3);
+  flex: none;
+}
+
+.meter__track {
+  position: relative;
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--track);
+  overflow: hidden;
+}
+
+.meter__track--wide {
+  height: 5px;
+}
+
+.meter__bar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0%;
+  border-radius: 2px;
+  background: var(--tone);
+  transition: width 0.5s var(--ease);
+}
+
+.meter__bar--ctx {
+  background: var(--ink-2);
+}
+
+.meter__value {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--ink-2);
+  flex: none;
+  min-width: 26px;
+  text-align: right;
+}
+
+/* -------------------------------------------------------------- detalhes */
+
+[data-layer='detail'] {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  padding: 16px 20px 14px;
+}
+
+.detail__head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* O veredito nao usa --tone: ele responde ao que esta dizendo, nao ao nivel
+   de uso. Um "acaba antes do reset" verde seria uma mentira visual. */
+.verdict {
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 4px 9px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  white-space: nowrap;
+  flex: none;
+  transition:
+    background 0.35s var(--ease),
+    color 0.35s var(--ease);
+}
+
+.verdict--ok {
+  background: rgba(48, 209, 88, 0.16);
+  color: #4ade80;
+}
+
+.verdict--warn {
+  background: rgba(255, 159, 10, 0.18);
+  color: #ffb340;
+}
+
+.verdict--idle {
+  background: var(--surface);
+  color: var(--ink-3);
+}
+
+.detail__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 10px;
+  border-radius: 11px;
+  background: var(--surface);
+}
+
+.stat__label {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.stat__value {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.detail__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.row__label {
+  font-size: 11px;
+  color: var(--ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 46%;
+}
+
+.row__value {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--ink-2);
+  flex: none;
+}
+
+.detail__history {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  height: 40px;
+}
+
+.bars > div {
+  flex: 1;
+  border-radius: 3px 3px 2px 2px;
+  background: linear-gradient(to top, color-mix(in srgb, var(--tone) 45%, transparent), var(--tone));
+  min-height: 3px;
+  opacity: 0.75;
+  transition: height 0.45s var(--ease);
+}
+
+.bars > div:last-child {
+  opacity: 1;
+}
+
+.detail__foot {
+  font-size: 10px;
+  color: var(--ink-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------------------------------------------------------------- alerta */
+
+[data-layer='alert'],
+[data-layer='setup'] {
+  gap: 13px;
+  padding: 0 20px;
+}
+
+.alert__glyph {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  flex: none;
+  background: color-mix(in srgb, var(--tone) 20%, transparent);
+  border: 1.5px solid var(--tone);
+  box-shadow: 0 0 16px -2px var(--tone);
+  position: relative;
+}
+
+.alert__glyph::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--tone);
+}
+
+.alert__title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.alert__detail {
+  font-size: 11.5px;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.alert__detail code {
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  font-size: 10.5px;
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: var(--surface-2);
+}
+
+.alert__meter {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  bottom: 11px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--track);
+  overflow: hidden;
+}
+
+.alert__bar {
+  height: 100%;
+  width: 0%;
+  border-radius: 2px;
+  background: var(--tone);
+  transition: width 0.6s var(--ease);
+}
+
+/* Respeita quem desativou animacao no Windows. */
+@media (prefers-reduced-motion: reduce) {
+  .dot {
+    animation: none;
+  }
+  .layer {
+    transition-duration: 0.01s;
+  }
+}

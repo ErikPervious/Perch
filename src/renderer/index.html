@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:;" />
+    <title>Perch</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!-- O palco e a janela inteira e e totalmente transparente.
+         Nada aqui redimensiona a janela: tudo se move em CSS vars. -->
+    <div id="stage">
+      <!-- Brilho por tras: intensidade e cor acompanham o nivel de uso. -->
+      <div id="glow"></div>
+
+      <!-- Camada das formas pretas. O filtro "goo" mora aqui e so aqui,
+           pra nao borrar o texto. -->
+      <div id="goo">
+        <div id="shell"></div>
+        <div id="bubble"></div>
+      </div>
+
+      <!-- O bicho. Pendurado na borda de cima da tela, de cabeca para baixo,
+           encostado na lateral direita da ilha. Fica fora do #content porque
+           aquele tem overflow:hidden -- aqui ele pode vazar pra fora do corpo. -->
+      <!-- viewBox 1:1 com o tamanho em CSS, entao unidade de viewBox = pixel.
+           Evita conversao na hora de calcular pra onde o olho tem que apontar. -->
+      <svg id="critter" viewBox="0 0 48 48" aria-hidden="true">
+        <!-- Pescoco fino saindo pra fora da tela (o y negativo e cortado pela
+             borda de cima) e cabeca redonda dominando o resto. Antes o corpo
+             era 30x60 e o bicho parecia esticado. -->
+        <path
+          class="critter__body"
+          d="M19 -6 C19 3 6 6 4 21 C2 35 12 44 24 44 C36 44 46 35 44 21 C42 6 29 3 29 -6 Z"
+        />
+        <!-- Orelhinhas apontando pra baixo, porque ele esta de ponta-cabeca. -->
+        <ellipse class="critter__ear" cx="13.5" cy="41" rx="4.2" ry="5.4" />
+        <ellipse class="critter__ear" cx="34.5" cy="41" rx="4.2" ry="5.4" />
+        <!-- Fio de luz na borda: o mesmo truque do corpo da ilha. -->
+        <path
+          class="critter__rim"
+          d="M19 -6 C19 3 6 6 4 21 C2 35 12 44 24 44 C36 44 46 35 44 21 C42 6 29 3 29 -6"
+        />
+        <g data-critter="eyes">
+          <g data-critter="lid">
+            <ellipse class="critter__white" cx="17" cy="25" rx="5.8" ry="6.6" />
+            <circle class="critter__pupil" data-critter="pupil" cx="17" cy="25" r="2.8" />
+          </g>
+          <g data-critter="lid">
+            <ellipse class="critter__white" cx="31" cy="25" rx="5.8" ry="6.6" />
+            <circle class="critter__pupil" data-critter="pupil" cx="31" cy="25" r="2.8" />
+          </g>
+        </g>
+      </svg>
+
+      <!-- Camada de conteudo: alinhada com o shell, sem filtro. -->
+      <div id="content">
+        <!-- Engrenagem discreta no canto: so aparece com o mouse em cima, e
+             so nos formatos que tem altura pra ela. -->
+        <button id="gear" title="Configurações" aria-label="Configurações">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M12 15.4a3.4 3.4 0 1 0 0-6.8 3.4 3.4 0 0 0 0 6.8Z M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06a2 2 0 1 1-2.84 2.83l-.06-.06a1.7 1.7 0 0 0-1.88-.33 1.7 1.7 0 0 0-1 1.55v.18a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.11-1.55 1.7 1.7 0 0 0-1.88.34l-.06.06a2 2 0 1 1-2.83-2.84l.06-.06a1.7 1.7 0 0 0 .33-1.88 1.7 1.7 0 0 0-1.55-1H2.8a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.55-1.11 1.7 1.7 0 0 0-.34-1.88l-.06-.06a2 2 0 1 1 2.84-2.83l.06.06a1.7 1.7 0 0 0 1.88.33h.08a1.7 1.7 0 0 0 1-1.55V2.8a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.89-.34l.06-.06a2 2 0 1 1 2.83 2.84l-.06.06a1.7 1.7 0 0 0-.33 1.88v.08a1.7 1.7 0 0 0 1.55 1h.18a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.55 1Z"
+            />
+          </svg>
+        </button>
+
+        <!-- ---------------------------------------------------- pilula -->
+        <section class="layer" data-layer="pill">
+          <span class="dot" data-role="dot"></span>
+          <span class="pill-pct num" data-role="pill-pct">--</span>
+          <div class="wave" data-role="wave" hidden>
+            <i></i><i></i><i></i><i></i><i></i>
+          </div>
+        </section>
+
+        <!-- -------------------------------------------------- expandido -->
+        <section class="layer" data-layer="expanded">
+          <div class="ring-wrap">
+            <!-- viewBox folgado de proposito: o traco vai ate r=25.5 e o neon
+                 espalha mais 5px. Com 56 o halo batia na borda do viewport do
+                 SVG e aparecia cortado reto. -->
+            <svg class="ring" viewBox="0 0 64 64" aria-hidden="true">
+              <circle class="ring__track" cx="32" cy="32" r="23" />
+              <circle class="ring__value" data-role="ring" cx="32" cy="32" r="23" />
+            </svg>
+            <span class="ring__label num" data-role="ring-pct">--</span>
+          </div>
+
+          <div class="col col--main">
+            <span class="eyebrow">Sessão de 5h</span>
+            <span class="headline" data-role="reset">aguardando dados</span>
+            <span class="sub" data-role="burn">—</span>
+          </div>
+
+          <div class="col col--right">
+            <svg class="spark" viewBox="0 0 120 34" preserveAspectRatio="none" aria-hidden="true">
+              <path class="spark__fill" data-role="spark-fill" d="" />
+              <path class="spark__line" data-role="spark-line" d="" />
+            </svg>
+            <div class="meter">
+              <span class="meter__label">7d</span>
+              <div class="meter__track"><div class="meter__bar" data-role="week-bar"></div></div>
+              <span class="meter__value num" data-role="week-pct">--</span>
+            </div>
+          </div>
+
+          <div class="wave wave--corner" data-role="wave-2" hidden>
+            <i></i><i></i><i></i><i></i><i></i>
+          </div>
+        </section>
+
+        <!-- ------------------------------------------------------ barra -->
+        <!-- Formato alternativo: so a barra de progresso. Aqui esticar na
+             horizontal e vantagem, nao problema. O corpo da ilha e a pista; o
+             preenchimento cresce por dentro. -->
+        <section class="layer" data-layer="bar">
+          <div class="barline__fill" data-role="bar-fill"></div>
+          <div class="barline__head" data-role="bar-head"></div>
+          <div class="barline__text">
+            <span class="dot" data-role="bar-dot"></span>
+            <span class="barline__pct num" data-role="bar-pct">--</span>
+            <span class="barline__label">sessão de 5h</span>
+            <span class="barline__reset num" data-role="bar-reset">—</span>
+          </div>
+        </section>
+
+        <!-- --------------------------------------------------- detalhes -->
+        <section class="layer" data-layer="detail">
+          <header class="detail__head">
+            <div class="ring-wrap ring-wrap--sm">
+              <svg class="ring" viewBox="0 0 64 64" aria-hidden="true">
+                <circle class="ring__track" cx="32" cy="32" r="23" />
+                <circle class="ring__value" data-role="ring-2" cx="32" cy="32" r="23" />
+              </svg>
+              <span class="ring__label num" data-role="ring-pct-2">--</span>
+            </div>
+            <div class="col col--main">
+              <span class="eyebrow">Sessão de 5h</span>
+              <span class="headline" data-role="reset-2">aguardando dados</span>
+            </div>
+            <div class="verdict" data-role="verdict">—</div>
+          </header>
+
+          <div class="detail__grid">
+            <div class="stat">
+              <span class="stat__label">Ritmo</span>
+              <span class="stat__value num" data-role="burn-2">—</span>
+            </div>
+            <div class="stat">
+              <span class="stat__label">Projeção</span>
+              <span class="stat__value num" data-role="projection">—</span>
+            </div>
+            <div class="stat">
+              <span class="stat__label">Semana</span>
+              <span class="stat__value num" data-role="week-2">—</span>
+            </div>
+          </div>
+
+          <div class="detail__row">
+            <span class="row__label" data-role="session-label">nenhuma sessão ativa</span>
+            <div class="meter__track meter__track--wide">
+              <div class="meter__bar meter__bar--ctx" data-role="ctx-bar"></div>
+            </div>
+            <span class="row__value num" data-role="ctx-pct">—</span>
+          </div>
+
+          <div class="detail__history">
+            <span class="eyebrow">Últimos 7 dias</span>
+            <div class="bars" data-role="bars"></div>
+          </div>
+
+          <footer class="detail__foot" data-role="foot">—</footer>
+        </section>
+
+        <!-- ---------------------------------------------------- alerta -->
+        <section class="layer" data-layer="alert">
+          <span class="alert__glyph" data-role="alert-glyph"></span>
+          <div class="col col--main">
+            <span class="alert__title" data-role="alert-title">—</span>
+            <span class="alert__detail" data-role="alert-detail">—</span>
+          </div>
+          <div class="alert__meter">
+            <div class="alert__bar" data-role="alert-bar"></div>
+          </div>
+        </section>
+
+        <!-- --------------------------------------------- bridge ausente -->
+        <section class="layer" data-layer="setup">
+          <span class="dot dot--idle"></span>
+          <div class="col col--main">
+            <span class="alert__title">Sem conexão com o Claude Code</span>
+            <span class="alert__detail">abra as configurações pelo ícone na bandeja</span>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- Filtro "goo": borra e depois recorta o alfa, fazendo duas formas
+         proximas se fundirem numa so, como massa. So fica ligado durante o
+         morph, porque blur em elemento animado custa caro. -->
+    <svg class="defs" aria-hidden="true">
+      <defs>
+        <filter id="goo">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="7" result="blur" />
+          <feColorMatrix
+            in="blur"
+            mode="matrix"
+            values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -10"
+            result="goo"
+          />
+          <feBlend in="SourceGraphic" in2="goo" />
+        </filter>
+      </defs>
+    </svg>
+
+    <script type="module" src="island.js"></script>
+  </body>
+</html>

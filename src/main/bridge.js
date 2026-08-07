@@ -1,0 +1,187 @@
+'use strict';
+
+/**
+ * Instalacao e manutencao do bridge, feitas de dentro do app.
+ *
+ * Empacotado nao existe `npm run`, entao tudo o que os scripts faziam mora
+ * aqui: gerar o atalho de invocacao, registrar no settings.json do Claude Code,
+ * fazer backup e desfazer.
+ *
+ * O problema central: o Claude Code precisa EXECUTAR o bridge, e um app
+ * empacotado nao pode exigir Node instalado na maquina. A saida e o proprio
+ * executavel do app rodando em modo Node (ELECTRON_RUN_AS_NODE) -- o Electron
+ * ja embute o Node.
+ *
+ * Mas ha um detalhe medido na marra: nesse modo o processo e de subsistema
+ * GUI, e escrever no stdout quando ele e um PIPE estoura EPIPE. Redirecionar
+ * pra ARQUIVO funciona. Dai o shim .cmd: ele redireciona pra um temporario e
+ * devolve o conteudo com `type`. O `chcp 65001` preserva os acentos e o simbolo
+ * de reset da statusline.
+ */
+
+const fs = require('fs');
+const path = require('path');
+const { app } = require('electron');
+const { SETTINGS_FILE, STATE_DIR } = require('./paths');
+
+const SHIM_FILE = path.join(STATE_DIR, 'statusline.cmd');
+const REFRESH_SECONDS = 10;
+
+/**
+ * Como reconhecer que o statusLine gravado e nosso.
+ *
+ * `claude-island` era o nome antigo do app e continua na lista: sem ele, uma
+ * instalacao feita antes da renomeacao seria lida como "statusLine de outra
+ * pessoa" e o app se recusaria a mexer -- deixando o usuario com uma entrada
+ * quebrada que so ele mesmo poderia consertar na mao.
+ */
+const OWN_MARKERS = ['Perch\\statusline.cmd', 'perch', 'claude-island', 'bridge/statusline.js', 'bridge\\statusline.js'];
+
+function isOurs(command) {
+  const lower = String(command).toLowerCase();
+  return OWN_MARKERS.some((marker) => lower.includes(marker.toLowerCase()));
+}
+
+/** Caminho real do script, dentro ou fora do pacote. */
+function scriptPath() {
+  // No pacote o bridge vai em extraResources, fora do asar -- precisa ser um
+  // arquivo de verdade no disco pra poder ser executado.
+  return app.isPackaged
+    ? path.join(process.resourcesPath, 'bridge', 'statusline.js')
+    : path.join(__dirname, '..', '..', 'bridge', 'statusline.js');
+}
+
+function shimContents() {
+  return [
+    '@echo off',
+    'chcp 65001 >nul',
+    'set ELECTRON_RUN_AS_NODE=1',
+    // Dois %RANDOM% dao ~1 bilhao de combinacoes: varias sessoes do Claude
+    // Code renderizam ao mesmo tempo e nao podem escrever no mesmo arquivo.
+    'set "CI_OUT=%TEMP%\\perch-%RANDOM%%RANDOM%.txt"',
+    `"${process.execPath}" "${scriptPath()}" > "%CI_OUT%" 2>nul`,
+    'type "%CI_OUT%" 2>nul',
+    'erase /q "%CI_OUT%" >nul 2>&1',
+    '',
+  ].join('\r\n');
+}
+
+/** O que deveria estar gravado no settings.json. */
+function expectedCommand() {
+  return `"${SHIM_FILE}"`;
+}
+
+function readSettings() {
+  const text = fs.readFileSync(SETTINGS_FILE, 'utf8');
+  return JSON.parse(text.charCodeAt(0) === 0xfeff ? text.slice(1) : text);
+}
+
+function writeSettings(settings) {
+  fs.writeFileSync(SETTINGS_FILE, `${JSON.stringify(settings, null, 2)}\n`);
+}
+
+/** Regrava o shim se o conteudo mudou (app movido, atualizado, etc). */
+function writeShim() {
+  fs.mkdirSync(STATE_DIR, { recursive: true });
+  const wanted = shimContents();
+  try {
+    if (fs.readFileSync(SHIM_FILE, 'utf8') === wanted) return false;
+  } catch {
+    /* nao existe ainda */
+  }
+  fs.writeFileSync(SHIM_FILE, wanted);
+  return true;
+}
+
+/**
+ * Estado atual, do ponto de vista do usuario.
+ *   installed  o Claude Code chama o nosso bridge?
+ *   foreign    ha um statusLine, mas de outra pessoa -- nao mexemos nele
+ *   stale      e o nosso, mas apontando pro lugar errado
+ */
+function status() {
+  let settings;
+  try {
+    settings = readSettings();
+  } catch (err) {
+    return { ok: false, reason: 'settings-ilegivel', detail: err.message };
+  }
+
+  const current = settings.statusLine;
+  if (!current || typeof current.command !== 'string') {
+    return { ok: true, installed: false, foreign: false, stale: false };
+  }
+
+  if (!isOurs(current.command)) {
+    return { ok: true, installed: false, foreign: true, command: current.command };
+  }
+
+  return {
+    ok: true,
+    installed: true,
+    foreign: false,
+    stale: current.command !== expectedCommand(),
+    command: current.command,
+  };
+}
+
+function install({ force = false } = {}) {
+  const state = status();
+  if (!state.ok) return state;
+  if (state.foreign && !force) return { ok: false, reason: 'statusline-de-terceiro', command: state.command };
+
+  const settings = readSettings();
+
+  // Backup com timestamp -- nunca sobrescreve um backup anterior.
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const backup = `${SETTINGS_FILE}.perch-backup-${stamp}`;
+  fs.copyFileSync(SETTINGS_FILE, backup);
+
+  writeShim();
+  settings.statusLine = {
+    type: 'command',
+    command: expectedCommand(),
+    padding: 0,
+    refreshInterval: REFRESH_SECONDS,
+  };
+  writeSettings(settings);
+
+  return { ok: true, installed: true, backup: path.basename(backup) };
+}
+
+function uninstall() {
+  const state = status();
+  if (!state.ok) return state;
+  if (!state.installed) return { ok: true, installed: false };
+
+  const settings = readSettings();
+  delete settings.statusLine;
+  writeSettings(settings);
+  return { ok: true, installed: false };
+}
+
+/**
+ * Chamado na inicializacao. Mantem o shim e o settings.json apontando pro
+ * lugar certo mesmo depois de atualizar ou mover o app -- sem isso, uma
+ * atualizacao deixaria o Claude Code chamando um caminho que nao existe mais,
+ * e a ilha ficaria muda sem explicar por que.
+ */
+function refresh() {
+  const state = status();
+  if (!state.ok || !state.installed) return state;
+
+  writeShim();
+  if (state.stale) {
+    const settings = readSettings();
+    settings.statusLine = {
+      ...settings.statusLine,
+      command: expectedCommand(),
+      refreshInterval: settings.statusLine.refreshInterval || REFRESH_SECONDS,
+    };
+    writeSettings(settings);
+    return { ...state, stale: false, repaired: true };
+  }
+  return state;
+}
+
+module.exports = { status, install, uninstall, refresh, scriptPath, SHIM_FILE };

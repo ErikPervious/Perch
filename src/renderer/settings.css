@@ -1,0 +1,514 @@
+/* =========================================================================
+   Painel de configuração — janela própria, centralizada, sem moldura.
+   Mesmo vocabulário visual da ilha: preto fundo, cantos generosos, fio de luz
+   na borda, tipografia apertada.
+   ========================================================================= */
+
+:root {
+  --bg: #0b0b0d;
+  --bg-2: rgba(255, 255, 255, 0.045);
+  --bg-3: rgba(255, 255, 255, 0.075);
+  --ink: rgba(255, 255, 255, 0.94);
+  --ink-2: rgba(255, 255, 255, 0.56);
+  --ink-3: rgba(255, 255, 255, 0.34);
+  --line: rgba(255, 255, 255, 0.08);
+  --accent: #30d158;
+  --danger: #ff453a;
+
+  --font: 'Segoe UI Variable Display', 'SF Pro Display', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --mono: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  --ease: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+:root[data-theme='light'] {
+  --bg: #f6f6f8;
+  --bg-2: rgba(0, 0, 0, 0.04);
+  --bg-3: rgba(0, 0, 0, 0.07);
+  --ink: rgba(0, 0, 0, 0.9);
+  --ink-2: rgba(0, 0, 0, 0.55);
+  --ink-3: rgba(0, 0, 0, 0.36);
+  --line: rgba(0, 0, 0, 0.09);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font);
+  color: var(--ink);
+  user-select: none;
+  display: grid;
+  place-items: center;
+  padding: 14px;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+code {
+  font-family: var(--mono);
+  font-size: 0.92em;
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: var(--bg-3);
+}
+
+/* ---------------------------------------------------------------- painel */
+
+.panel {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow:
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.1),
+    inset 0 0 0 0.5px var(--line),
+    0 26px 70px -14px rgba(0, 0, 0, 0.8);
+}
+
+.panel__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 16px 14px 20px;
+  border-bottom: 1px solid var(--line);
+  -webkit-app-region: drag; /* a janela nao tem moldura: arrasta pelo topo */
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Miniatura da propria ilha, pra amarrar o painel ao produto. */
+.brand__pill {
+  width: 44px;
+  height: 17px;
+  border-radius: 9px;
+  background: #000;
+  box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.16);
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+
+:root[data-theme='light'] .brand__pill {
+  background: #16171a;
+}
+
+.brand__pill i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 7px var(--accent);
+}
+
+.brand h1 {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.brand p {
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.icon-btn {
+  -webkit-app-region: no-drag;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--bg-2);
+  color: var(--ink-2);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background 0.16s, color 0.16s;
+}
+
+.icon-btn:hover {
+  background: var(--bg-3);
+  color: var(--ink);
+}
+
+.icon-btn svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  fill: none;
+}
+
+/* ----------------------------------------------------------------- corpo */
+
+.panel__body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 4px 20px 16px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg-3) transparent;
+}
+
+.panel__body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.panel__body::-webkit-scrollbar-thumb {
+  background: var(--bg-3);
+  border-radius: 4px;
+}
+
+.group {
+  padding: 16px 0 4px;
+  border-bottom: 1px solid var(--line);
+}
+
+.group:last-child {
+  border-bottom: 0;
+}
+
+.group__title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 10px;
+}
+
+.group__note {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+  margin-bottom: 12px;
+}
+
+.group__note b {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* ----------------------------------------------------------------- linha */
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 9px 0;
+  min-height: 46px;
+}
+
+.row--stack {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 9px;
+}
+
+.row__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.row__label {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.row__hint {
+  font-size: 11px;
+  color: var(--ink-3);
+  line-height: 1.4;
+}
+
+.row.is-off {
+  opacity: 0.38;
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------------- segmentado */
+
+.segment {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 10px;
+  background: var(--bg-2);
+  flex: none;
+}
+
+.segment button {
+  border: 0;
+  background: transparent;
+  color: var(--ink-2);
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 550;
+  padding: 6px 11px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.18s var(--ease), color 0.18s;
+}
+
+.segment button:hover {
+  color: var(--ink);
+}
+
+.segment button.is-on {
+  background: var(--bg-3);
+  color: var(--ink);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+/* ---------------------------------------------------------------- switch */
+
+.switch {
+  position: relative;
+  width: 42px;
+  height: 25px;
+  flex: none;
+  border: 0;
+  border-radius: 13px;
+  background: var(--bg-3);
+  cursor: pointer;
+  transition: background 0.22s var(--ease);
+}
+
+.switch i {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  transition: transform 0.24s var(--ease);
+}
+
+.switch[aria-checked='true'] {
+  background: var(--accent);
+}
+
+.switch[aria-checked='true'] i {
+  transform: translateX(17px);
+}
+
+/* -------------------------------------------------------------- gravador */
+
+.recorder {
+  flex: none;
+  min-width: 148px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg-2);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  cursor: pointer;
+  transition: border-color 0.18s, background 0.18s, color 0.18s;
+}
+
+.recorder:hover {
+  background: var(--bg-3);
+}
+
+.recorder.is-recording {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.recorder.is-bad {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+}
+
+/* ---------------------------------------------------------------- acao */
+
+.action {
+  flex: none;
+  min-width: 120px;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg-2);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 550;
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s, color 0.18s;
+}
+
+.action:hover {
+  background: var(--bg-3);
+}
+
+/* Instalado: a ação disponível passa a ser remover, então ela fica discreta. */
+.action.is-on {
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.action.is-warn {
+  border-color: color-mix(in srgb, var(--danger) 40%, transparent);
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+}
+
+.action:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* -------------------------------------------------------- range e horario */
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  flex: none;
+}
+
+.stepper input[type='range'] {
+  width: 132px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.stepper__value {
+  font-size: 11.5px;
+  color: var(--ink-2);
+  min-width: 38px;
+  text-align: right;
+}
+
+.times {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+.times input[type='time'] {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--ink);
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 7px 9px;
+  color-scheme: dark;
+}
+
+:root[data-theme='light'] .times input[type='time'] {
+  color-scheme: light;
+}
+
+.times__sep {
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+/* ----------------------------------------------------------------- chips */
+
+.chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.chips button {
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+  color: var(--ink-3);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 550;
+  padding: 6px 11px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background 0.16s, color 0.16s, border-color 0.16s;
+}
+
+.chips button.is-on {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  color: var(--accent);
+}
+
+/* ----------------------------------------------------------------- rodape */
+
+.panel__foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--line);
+}
+
+.foot__spacer {
+  flex: 1;
+}
+
+.foot__note {
+  font-size: 10.5px;
+  color: var(--ink-3);
+  transition: color 0.2s;
+}
+
+.foot__note.is-flash {
+  color: var(--accent);
+}
+
+.link {
+  border: 0;
+  background: none;
+  color: var(--ink-2);
+  font-family: inherit;
+  font-size: 11.5px;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--line);
+}
+
+.link:hover {
+  color: var(--ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0.01s !important;
+  }
+}
