@@ -83,7 +83,17 @@ function createWindow() {
   if (process.argv.some((a) => ['--dev', '--demo', '--show', '--fps', '--stress'].includes(a))) {
     // stderr, nao stdout: no Windows o Electron e um app de subsistema GUI e o
     // stdout do processo principal nao chega em quem redirecionou.
-    win.webContents.on('console-message', (_event, level, message, line, source) => {
+    //
+    // A assinatura deste evento mudou no Electron 37: antes vinham cinco
+    // argumentos soltos, agora vem um objeto so. Aceitar as duas formas evita
+    // que a proxima atualizacao quebre o diagnostico em silencio -- que e
+    // justamente a ferramenta usada pra descobrir que algo quebrou.
+    win.webContents.on('console-message', (...args) => {
+      const details = args[0] && typeof args[0] === 'object' && 'message' in args[0] ? args[0] : null;
+      const level = details ? details.level : args[1];
+      const message = details ? details.message : args[2];
+      const line = details ? details.lineNumber : args[3];
+      const source = details ? details.sourceId : args[4];
       process.stderr.write(`[renderer:${level}] ${message}  (${String(source).split('/').pop()}:${line})\n`);
     });
     win.webContents.on('render-process-gone', (_event, details) =>
