@@ -46,8 +46,12 @@ Windows 10 ou 11, 64 bits. O executável não é assinado — veja
 escreve.
 
 O ícone aparece na bandeja. Abra **Configurações → Conexão com o Claude Code →
-conectar**, inicie uma sessão do Claude Code e mande uma mensagem. Os números
-começam a aparecer.
+conectar**, inicie uma sessão do Claude Code **no terminal** e mande uma
+mensagem. Os números começam a aparecer.
+
+> O aplicativo de desktop não serve para alimentar o Perch: a statusLine é um
+> recurso do terminal, e na interface gráfica ela nunca é executada. O painel
+> avisa quando detecta essa situação.
 
 Nenhum comando de terminal, e o Node **não** precisa estar instalado.
 
@@ -93,12 +97,16 @@ para a **Live Activity** — como esses arquivos são escritos enquanto o Claude
 responde, ela sabe em tempo real que há uma sessão gerando agora, e monta o
 gráfico dos últimos 7 dias.
 
-### Três limitações honestas
+### Limitações honestas
 
-- O bridge só alimenta dados **enquanto algum Claude Code está aberto**. Com
-  tudo fechado a ilha continua o countdown correto (usa `resets_at`), mas a
-  porcentagem congela na última leitura — e o rodapé passa a dizer há quanto
-  tempo o dado é, em vez de fingir que está vivo.
+- **Só sessões de terminal alimentam o Perch.** A statusLine desenha uma linha
+  abaixo do prompt no TUI; no aplicativo de desktop esse lugar não existe e o
+  comando nunca é executado. Se você usa só a interface gráfica, o Perch fica
+  sem número — e o painel detecta e explica isso, em vez de dizer "conectado" e
+  não entregar nada.
+- Com nenhuma sessão aberta a ilha continua o countdown correto (usa
+  `resets_at`), mas a porcentagem congela na última leitura — e o rodapé passa
+  a dizer há quanto tempo o dado é, em vez de fingir que está vivo.
 - `rate_limits` só aparece **depois da primeira resposta da API** na sessão, e
   só para assinantes. Antes disso a ilha mostra "aguardando a primeira resposta".
 - Uso feito no claude.ai ou no app desktop **não** aparece. Só Claude Code.

@@ -1,7 +1,7 @@
 {
   "name": "perch",
   "productName": "Perch",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "private": true,
   "description": "Ilha animada no topo da tela com o uso da sua sessão do Claude Code.",
   "author": "Erick",

@@ -30,6 +30,9 @@ const triggers = new TriggerEngine();
 let lastSnapshot = null;
 let lastActivity = { active: false, intensity: 0 };
 let history = [];
+// Última vez que algum transcript foi escrito — prova de que o Claude Code
+// está trabalhando, independente de a statusLine estar sendo executada.
+let lastTranscriptAt = null;
 
 // ---------------------------------------------------------------- janela
 
@@ -228,6 +231,27 @@ function onUpdateAvailable(state) {
 
 // ---------------------------------------------------------------- estado
 
+// Quanto tempo sem leitura do bridge, havendo sessão ativa, já é sintoma.
+const BRIDGE_IDLE_MS = 4 * 60 * 1000;
+
+/**
+ * O Claude Code está trabalhando mas não chama o bridge?
+ *
+ * Os transcripts são escritos por qualquer sessão; a statusLine só é executada
+ * por sessão de **terminal**. No app desktop não existe linha de status abaixo
+ * do prompt, e o comando nunca roda.
+ *
+ * Sem este diagnóstico o painel dizia "conectado" e não entregava número
+ * nenhum, sem explicar — o pior tipo de silêncio.
+ */
+function bridgeIdleDiagnosis(snapshot) {
+  const activity = lastTranscriptAt;
+  if (!activity || Date.now() - activity > BRIDGE_IDLE_MS) return null;
+  const stale = snapshot?.staleMs;
+  if (stale == null || stale < BRIDGE_IDLE_MS) return null;
+  return { transcriptsAt: activity, staleMs: stale };
+}
+
 function pushState() {
   const snapshot = lastSnapshot || usage.snapshot;
   const status = bridgeStatus();
@@ -235,7 +259,11 @@ function pushState() {
     ...snapshot,
     history,
     config,
-    bridge: { ...status, stateFileExists: fs.existsSync(STATE_FILE) },
+    bridge: {
+      ...status,
+      stateFileExists: fs.existsSync(STATE_FILE),
+      idle: bridgeIdleDiagnosis(snapshot),
+    },
   });
 }
 
@@ -449,6 +477,7 @@ if (!gotLock) {
     usage.start();
 
     transcripts.on('activity', (activity) => {
+      if (activity.active) lastTranscriptAt = Date.now();
       // So empurra quando muda de estado ou quando esta ativo, pra nao
       // acordar o renderer a cada 1.2s a toa.
       const changed = activity.active !== lastActivity.active || activity.active;

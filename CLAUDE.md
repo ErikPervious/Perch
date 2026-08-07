@@ -65,6 +65,19 @@ do renderer ainda não tinha registrado os listeners e a mensagem se perdia.
 O `ready()` é chamado no **fim** do pré-aquecimento, não no carregamento. "Pronto"
 tem que significar rasterizado.
 
+### Só sessão de terminal executa a statusLine
+
+O aplicativo de desktop **nunca** chama o comando: a statusLine desenha uma
+linha abaixo do prompt no TUI, e na interface gráfica esse lugar não existe.
+
+Medido: com 14 processos do Claude Code rodando, incluindo a janela gráfica, e
+transcripts sendo escritos ativamente, o bridge não foi invocado nenhuma vez.
+Uma sessão de terminal alimentou na primeira interação.
+
+Por isso existe `bridgeIdleDiagnosis()`: transcripts recentes com dado de bridge
+velho significam exatamente isso, e o painel explica em vez de dizer
+"conectado" sem entregar número.
+
 ### O caminho no settings.json precisa ser absoluto
 
 Já foi tentado gravar `"%LOCALAPPDATA%\Perch\statusline.cmd"` para não deixar o
