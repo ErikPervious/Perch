@@ -21,6 +21,19 @@ Anthropic. Descrever o que o app faz é uso nominativo e segue tranquilo.
 
 ---
 
+## Demonstração
+
+https://github.com/user-attachments/assets/c28877c8-ff1f-4316-be5a-714a5f6e83b4
+
+A descida com o overshoot da mola, o painel expandindo no hover, os três
+formatos, o alerta com tremor — e o bicho acompanhando o cursor até se assustar
+quando ele chega perto.
+
+Gravado a 60fps com `npm run dev -- --reel`, que executa essa coreografia com
+tempos fixos.
+
+---
+
 ## Instalação
 
 Baixe o **[instalador na última release](https://github.com/ErikPervious/Perch/releases/latest)**.
