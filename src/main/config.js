@@ -19,7 +19,6 @@ const DEFAULTS = {
   // --- aparencia
   theme: 'dark', // 'dark' | 'light'
   format: 'card', // formato que o atalho abre: 'card' | 'bar' | 'pill'
-  accent: 'auto', // 'auto' segue o nivel de uso; ou um hex fixo
 
   // --- bridge
   //

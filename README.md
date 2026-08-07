@@ -156,9 +156,14 @@ explicar por quê.
 | `Ctrl + Alt + K` | abre direto nos detalhes |
 | `Ctrl + Alt + L` | cicla o formato: card → barra → pílula |
 | Mouse sobre a ilha | expande para o painel completo |
-| Clique | trava aberta (clique de novo para destravar) |
-| Engrenagem no canto | abre o painel de configuração |
+| Botão de fixar, no canto | mantém o painel aberto mesmo sem o mouse em cima |
+| Engrenagem, ao lado dele | abre o painel de configuração |
+| Clique na ilha | mesmo efeito de fixar |
 | Ícone da bandeja | clique mostra a ilha; botão direito abre o menu |
+
+Os dois botões do canto só aparecem com o mouse sobre a ilha — mas o de fixar
+continua visível enquanto estiver ativo, que é o único jeito de saber por que
+ela não está recolhendo.
 
 A ilha é **click-through**: quando o cursor não está sobre ela, os cliques passam
 direto para a janela que estiver embaixo.
@@ -356,13 +361,20 @@ Com tudo parado e a ilha escondida, o loop sai cedo em vez de reescrever CSS var
 
 ```
 bridge/statusline.js       recebe o JSON do Claude Code e grava state.json
+
+scripts/check.js           sintaxe e invariantes de pares — roda em todo PR
 scripts/make-icon.js       gera build/icon.ico a partir de código
+scripts/release-notes.js   extrai do CHANGELOG a seção de uma versão
+scripts/record-reel.ps1    captura a janela em BGRA cru a 60fps
+scripts/encode-mp4.js      converte a captura em H.264 (precisa de ffmpeg)
+scripts/encode-gif.js      o mesmo em GIF, sem dependência nenhuma
 
 src/main/index.js          janela, bandeja, atalhos globais, IPC
 src/main/bridge.js         instala/remove o statusLine e mantém o shim
 src/main/usage.js          observa state.json e deriva ritmo/projeção/anomalia
 src/main/transcripts.js    Live Activity e histórico de 7 dias
 src/main/triggers.js       decide quando a ilha desce sozinha
+src/main/updates.js        verifica novas versões — a única chamada de rede
 src/main/config.js         preferências, com faixa de horário
 src/main/paths.js          caminhos e migração do nome antigo
 src/main/icon.js           encoder PNG e ICO escritos à mão
@@ -488,6 +500,13 @@ Pelo painel, ou direto em `%LOCALAPPDATA%\Perch\config.json`:
 | `peekMs` | `4200` | quanto tempo o alerta fica na tela |
 | `display` | `primary` | `cursor` para seguir o monitor ativo |
 | `schedule` | desligado | `{ enabled, from, to, days }` |
+| `checkUpdates` | `true` | verificar novas versões — a única requisição de rede |
+
+Duas chaves não são preferências e sim estado que o app mantém: `bridgeWanted`
+guarda se você pediu a conexão (é o que permite repor a entrada quando outro
+processo a apaga, sem passar por cima de uma desconexão deliberada) e
+`updateSeen` registra a última versão já anunciada, para o aviso não repetir a
+cada abertura.
 
 Se editar à mão, salve **sem BOM**. O app remove o BOM na leitura justamente
 porque Bloco de Notas e `Out-File -Encoding utf8` gravam com ele e o `JSON.parse`
