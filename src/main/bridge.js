@@ -66,7 +66,19 @@ function shimContents() {
   ].join('\r\n');
 }
 
-/** O que deveria estar gravado no settings.json. */
+/**
+ * O que deveria estar gravado no settings.json.
+ *
+ * Caminho absoluto, de proposito. Ja tentamos `%LOCALAPPDATA%\...` para nao
+ * gravar o nome de usuario no arquivo, e **nao funciona**: o Claude Code nao
+ * executa a statusLine pelo cmd. O executor de hooks aceita bash ou
+ * PowerShell, e nenhum dos dois expande `%VAR%` -- o comando falha em silencio
+ * e a ilha para de receber dados sem dizer por que.
+ *
+ * `$LOCALAPPDATA` tambem nao serve: funcionaria no bash e falharia no
+ * PowerShell, que precisa de `$env:`. Como o shell varia por usuario, nao ha
+ * forma portatil. Fica o caminho absoluto, que funciona em todos.
+ */
 function expectedCommand() {
   return `"${SHIM_FILE}"`;
 }
