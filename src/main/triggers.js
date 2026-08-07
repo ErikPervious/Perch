@@ -139,6 +139,7 @@ class TriggerEngine {
     const ms = snapshot.fiveHour.resetInMs;
     if (ms === null || ms === undefined) return 'sem previsão de reset';
     const mins = Math.max(0, Math.round(ms / 60000));
+    if (mins < 1) return 'renova agora'; // não "renova em 0min"
     if (mins < 60) return `renova em ${mins}min`;
     return `renova em ${Math.floor(mins / 60)}h${String(mins % 60).padStart(2, '0')}`;
   }

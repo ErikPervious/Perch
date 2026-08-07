@@ -417,17 +417,36 @@ function updateHover(w, h, y) {
   }
 }
 
+/** Só o visual do botão — usado quando quem muda `pinned` já vai reaplicar. */
+function syncPin() {
+  const button = $('#pin');
+  button.setAttribute('aria-pressed', String(pinned));
+  button.title = pinned ? 'Desafixar' : 'Fixar na tela';
+}
+
+/** Fixado = o painel fica aberto até você desafixar, mesmo sem o mouse. */
+function setPinned(value) {
+  pinned = value;
+  syncPin();
+  clearTimeout(alertTimer);
+  applyState(resolve());
+}
+
 window.addEventListener('click', (event) => {
-  // A engrenagem tem dono proprio: clicar nela nao pode travar a ilha aberta.
+  // Os botões do canto têm dono próprio: clicar neles não pode cair no
+  // comportamento genérico de clique na ilha.
   if (event.target.closest('#gear')) {
     event.stopPropagation();
     window.island.openPanel('settings');
     return;
   }
+  if (event.target.closest('#pin')) {
+    event.stopPropagation();
+    setPinned(!pinned);
+    return;
+  }
   if (!hovering) return;
-  pinned = !pinned;
-  clearTimeout(alertTimer);
-  applyState(resolve());
+  setPinned(!pinned);
 });
 
 /* ------------------------------------------------------------- formatacao */
@@ -438,6 +457,16 @@ function fmtDuration(ms) {
   if (mins < 1) return 'agora';
   if (mins < 60) return `${mins}min`;
   return `${Math.floor(mins / 60)}h${String(mins % 60).padStart(2, '0')}`;
+}
+
+/**
+ * "renova em 2h14", mas "renova agora" quando falta menos de um minuto.
+ * Concatenar cegamente produzia "renova em agora".
+ */
+function fmtReset(ms) {
+  const d = fmtDuration(ms);
+  if (d === null) return 'sem previsão de reset';
+  return d === 'agora' ? 'renova agora' : `renova em ${d}`;
 }
 
 function fmtClock(date) {
@@ -515,7 +544,7 @@ function render() {
   role('ring-pct-2').textContent = Math.round(used);
 
   const resetIn = five.resetsAt ? five.resetsAt * 1000 - Date.now() : null;
-  const resetText = resetIn != null ? `renova em ${fmtDuration(resetIn)}` : 'sem previsão de reset';
+  const resetText = fmtReset(resetIn);
   role('reset').textContent = resetText;
   role('reset-2').textContent = resetText;
   role('bar-reset').textContent = resetIn != null ? `↻ ${fmtDuration(resetIn)}` : '—';
@@ -667,20 +696,18 @@ window.island.onCommand((payload) => {
     currentAlert = null;
 
     if (payload.force) {
-      // 'open' respeita o formato configurado; 'detail' sempre abre o painel.
+      // 'open' respeita o formato configurado; 'detail' sempre abre o painel,
+      // e por isso já vem fixado — senão sumiria assim que o mouse saísse.
       pinned = payload.force === 'detail';
+      syncPin();
       setBase(payload.force === 'detail' ? openState() : payload.force === 'open' ? openState() : payload.force);
       if (payload.force === 'detail') applyState('detail');
       return;
     }
 
-    if (baseState === 'hidden') {
-      pinned = false;
-      setBase(openState());
-    } else {
-      pinned = false;
-      setBase('hidden');
-    }
+    pinned = false;
+    syncPin();
+    setBase(baseState === 'hidden' ? openState() : 'hidden');
   }
 });
 

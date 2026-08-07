@@ -6,6 +6,26 @@ disponível — então escreva pensando em quem vai ler antes de decidir se baix
 
 ## [Não publicado]
 
+### Adicionado
+
+- Botão de fixar ao lado da engrenagem. O painel já podia ser travado clicando
+  na ilha, mas não havia nada indicando isso — agora tem botão, com estado
+  visível, que continua aparecendo enquanto estiver fixado.
+
+### Corrigido
+
+- Os botões do canto passavam por baixo do badge de veredito no painel de
+  detalhes e ficavam colados na borda. Ganharam folga e área de clique maior.
+- O olho do bicho virava um risco fino no humor sonolento. A pálpebra encolhia
+  em torno do centro do olho, que fica exatamente na borda da tela, então
+  fechar comia justamente a metade visível — e a pupila ficava maior que a
+  fresta. O pivô desceu, e o fechamento agora come primeiro a parte que já
+  está fora da tela.
+- "renova em agora" quando faltava menos de um minuto para o reset. Virou
+  "renova agora".
+- No tema claro o bicho herdava o branco do corpo da ilha e praticamente
+  desaparecia. Passou a ter cor própria.
+
 ## [1.0.1] — 2026-08-07
 
 ### Adicionado
