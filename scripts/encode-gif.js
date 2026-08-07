@@ -36,7 +36,12 @@ const FROM = flag('from', 0);
 const TO = flag('to', Infinity);
 
 const meta = JSON.parse(fs.readFileSync(path.join(dir, 'meta.json'), 'utf8'));
-const raw = fs.readFileSync(path.join(dir, 'frames.raw'));
+
+// Lê frame a frame em vez de carregar o arquivo inteiro: a 60fps a gravação
+// passa de 2 GiB, que é o teto de um Buffer do Node.
+const rawPath = path.join(dir, 'frames.raw');
+const rawSize = fs.statSync(rawPath).size;
+const rawFd = fs.openSync(rawPath, 'r');
 
 const srcW = meta.width;
 const srcH = meta.height;
@@ -185,7 +190,7 @@ function subBlocks(data) {
 
 // --------------------------------------------------------------- fluxo
 
-const total = Math.floor(raw.length / frameBytes);
+const total = Math.floor(rawSize / frameBytes);
 const last = Math.min(total, TO);
 const picked = [];
 for (let i = Math.max(0, FROM); i < last; i += EVERY) picked.push(i);
@@ -194,7 +199,12 @@ process.stdout.write(
   `${total} frames de ${srcW}x${srcH} -> ${picked.length} de ${outW}x${outH} (${FROM}..${last === total ? 'fim' : last})\n`,
 );
 
-const scaled = picked.map((i) => downscale(raw.subarray(i * frameBytes, (i + 1) * frameBytes)));
+const oneFrame = Buffer.alloc(frameBytes);
+const scaled = picked.map((i) => {
+  fs.readSync(rawFd, oneFrame, 0, frameBytes, i * frameBytes);
+  return downscale(oneFrame);
+});
+fs.closeSync(rawFd);
 const palette = buildPalette(scaled);
 const cache = new Map();
 

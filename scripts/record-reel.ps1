@@ -12,9 +12,13 @@
 # Sem acentos de proposito: o PowerShell 5.1 le .ps1 sem BOM como ANSI, e
 # caractere acentuado quebra o parser.
 
+# 60fps foi medido, nao estimado: a captura sustenta 60,1fps reais nesta
+# maquina. O padrao anterior de 20 era chute conservador -- o laco estava
+# sendo freado pelo proprio Start-Sleep, nao pelo hardware.
+# A 60fps sao ~100MB de frames crus por segundo de video. Verifique o disco.
 param(
-    [int]$Fps = 20,
-    [double]$Seconds = 15.5,
+    [int]$Fps = 60,
+    [double]$Seconds = 24,
     [string]$Out = "$env:TEMP\perch-reel"
 )
 
