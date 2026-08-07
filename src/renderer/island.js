@@ -241,6 +241,94 @@ function stepWave(t) {
   }
 }
 
+/* ------------------------------------------------------ modo de gravacao */
+
+/**
+ * Coreografia com tempos fixos, para a gravação sair numa tomada só.
+ *
+ * Acertar isso ao vivo exigiria disparar três atalhos, passar o mouse na hora
+ * certa, aproximar o cursor do bicho e ainda provocar um alerta — são muitas
+ * tomadas. Aqui é determinístico e repetível.
+ *
+ * O cursor também é sintético: no vídeo ninguém vê o mouse de quem grava,
+ * então sem isso o olhar do bicho ficaria parado e a parte mais viva do app
+ * não apareceria.
+ */
+// Folga para o gravador começar antes da coreografia. Sem isso, o tempo de
+// boot entra na conta e a gravação pega o reel já no meio.
+const REEL_LEAD_IN = 7;
+
+const REEL = [
+  { at: 0.0, state: 'expanded' },
+  { at: 2.6, state: 'detail' },
+  { at: 5.4, state: 'bar' },
+  { at: 7.2, state: 'pill' },
+  { at: 8.4, alert: { level: 'warning', title: 'Queimando rápido', detail: '1,9%/min · acaba em ~24min', value: 78, shake: true } },
+  { at: 11.0, state: 'detail' },
+  { at: 14.2, state: 'hidden' },
+];
+
+/**
+ * Trajetória do cursor, em fração da janela.
+ *
+ * Precisa ser coreografada, não um arco qualquer: o bicho foge de cursor a
+ * menos de 96px, e na primeira tentativa o arco passava perto dele o tempo
+ * todo — ele ficava escondido e sumia do vídeo inteiro.
+ *
+ * Aqui ele passa longe até os 9s, se aproxima UMA vez para o bicho fugir, e
+ * se afasta para ele voltar a espiar. Vira uma cena em vez de um acidente.
+ */
+const REEL_PATH = [
+  { at: 0.0, x: 0.2, y: 0.75 },
+  { at: 3.0, x: 0.34, y: 0.55 },
+  { at: 6.0, x: 0.22, y: 0.8 },
+  { at: 9.0, x: 0.5, y: 0.68 },
+  { at: 10.6, x: 0.88, y: 0.1 }, // chega perto: o bicho se recolhe
+  { at: 12.2, x: 0.35, y: 0.85 }, // se afasta: ele volta a espiar
+  { at: 15.0, x: 0.25, y: 0.75 },
+];
+
+let reelActive = false;
+let reelStartedAt = 0;
+
+function startReel() {
+  document.body.classList.add('is-reel');
+  reelActive = true;
+  reelStartedAt = performance.now() + REEL_LEAD_IN * 1000;
+
+  for (const step of REEL) {
+    setTimeout(
+      () => {
+        currentAlert = null;
+        clearTimeout(alertTimer);
+        if (step.alert) fireAlert(step.alert, 2400);
+        else setBase(step.state);
+      },
+      (REEL_LEAD_IN + step.at) * 1000,
+    );
+  }
+}
+
+function reelPointer(now) {
+  const t = (now - reelStartedAt) / 1000;
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+
+  if (t <= REEL_PATH[0].at) return { x: REEL_PATH[0].x * w, y: REEL_PATH[0].y * h };
+
+  for (let i = 1; i < REEL_PATH.length; i++) {
+    const a = REEL_PATH[i - 1];
+    const b = REEL_PATH[i];
+    if (t > b.at) continue;
+    // Suavização em cosseno: cursor humano não muda de direção em bico.
+    const k = (1 - Math.cos((Math.PI * (t - a.at)) / (b.at - a.at))) / 2;
+    return { x: (a.x + (b.x - a.x) * k) * w, y: (a.y + (b.y - a.y) * k) * h };
+  }
+
+  const last = REEL_PATH[REEL_PATH.length - 1];
+  return { x: last.x * w, y: last.y * h };
+}
+
 /* -------------------------------------------------- medicao de suavidade */
 
 /**
@@ -305,7 +393,7 @@ function frame(now) {
   //
   // O bicho tem voto: com "espiar sozinho" ligado ele continua vivo mesmo com
   // a ilha escondida, e ai o loop precisa seguir rodando.
-  if (ready && effective === 'hidden' && !activity.active && atRest() && critter.resting) {
+  if (ready && !reelActive && effective === 'hidden' && !activity.active && atRest() && critter.resting) {
     requestAnimationFrame(frame);
     return;
   }
@@ -348,7 +436,7 @@ function frame(now) {
   // anda junto com a largura -- inclusive durante o morph. Ele mesmo cuida do
   // proprio Y, que depende de quanto esta espiando.
   critter.setMood(moodNow());
-  critter.step(dt, pointer, window.innerWidth / 2 + shakeX + w / 2 + CRITTER_OFFSET_X);
+  critter.step(dt, reelActive ? reelPointer(now) : pointer, window.innerWidth / 2 + shakeX + w / 2 + CRITTER_OFFSET_X);
 
   requestAnimationFrame(frame);
 }
@@ -379,6 +467,9 @@ window.island.onPointer((position) => {
 });
 
 function updateHover(w, h, y) {
+  // Durante a gravação quem manda é a coreografia. Se o mouse real estiver
+  // parado sobre a ilha, o hover travaria tudo em "detail".
+  if (reelActive) return;
   if (effective === 'hidden' && !hovering) {
     if (interactive) {
       interactive = false;
@@ -667,6 +758,8 @@ window.island.onCommand((payload) => {
       fps.on = true;
       fps.since = performance.now();
     }
+    if (payload.reel) startReel();
+
     // --stress fica trocando de estado pra medicao cair em cima dos morphs,
     // que e onde a travada aparece. Ilha parada rodando a 60fps nao prova nada.
     if (payload.stress) {

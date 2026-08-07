@@ -373,12 +373,42 @@ npm run dev
 | `--settings` | abre o painel de configuração |
 | `--fps` | contador de frames (mediana, p95, pior, frames >20ms) |
 | `--stress` | fica trocando de estado a cada 700ms |
+| `--reel` | executa uma coreografia com tempos fixos, para gravar demonstração |
 | `--dev` | abre o DevTools numa janela separada |
 
 Qualquer uma delas liga o repasse do console do renderer para o **stderr** — sem
 isso, um erro de módulo no renderer some sem deixar rastro. Precisa ser stderr:
 no Windows o Electron é app de subsistema GUI e o stdout do processo principal
 não chega em quem redirecionou.
+
+### Gravar uma demonstração
+
+```bash
+npm run dev -- --reel
+powershell -ExecutionPolicy Bypass -File scripts/record-reel.ps1 -Seconds 20
+node scripts/encode-gif.js --scale 0.6 --from 50 --to 362
+```
+
+`--reel` executa uma coreografia com tempos fixos — descida, detalhes, barra,
+pílula, alerta com tremor, e o cursor se aproximando do bicho para ele fugir.
+Acertar isso ao vivo exigiria muitas tomadas.
+
+Dois detalhes que existem por motivo:
+
+O modo desenha um **fundo próprio**. A janela é transparente, então gravar a
+tela capturaria o editor e o código de quem está gravando.
+
+O **cursor é sintético**, seguindo uma trajetória coreografada. No vídeo
+ninguém vê o mouse de quem grava, então sem isso o olhar do bicho ficaria
+parado. A trajetória passa longe dele até os 9s e se aproxima uma vez só —
+na primeira tentativa o arco passava perto o tempo todo e ele ficava escondido
+no vídeo inteiro.
+
+A captura grava BGRA cru: codificar PNG dentro do laço derruba a taxa para uns
+10fps, e a mola da animação vive nos primeiros 200ms de cada morph. Assim dá
+20fps. O tempo de boot varia, então grave com folga e apare por índice de frame
+— `node scripts/encode-gif.js --help` não existe, mas `--from`, `--to`,
+`--scale` e `--every` sim.
 
 ### Compilar
 

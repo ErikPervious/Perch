@@ -10,6 +10,12 @@
     <!-- O palco e a janela inteira e e totalmente transparente.
          Nada aqui redimensiona a janela: tudo se move em CSS vars. -->
     <div id="stage">
+      <!-- Fundo do modo --reel. A janela e transparente, entao gravar a tela
+           capturaria o que estiver atras da ilha -- o editor, codigo, o que
+           for. Com um fundo proprio a captura fica controlada e nao vaza nada
+           da maquina de quem grava. Invisivel fora do modo de gravacao. -->
+      <div id="reel-backdrop"></div>
+
       <!-- Brilho por tras: intensidade e cor acompanham o nivel de uso. -->
       <div id="glow"></div>
 

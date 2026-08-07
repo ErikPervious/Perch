@@ -131,6 +131,38 @@ body {
   will-change: width, height, transform;
 }
 
+/* ------------------------------------------------------------ gravacao */
+
+/* Só existe sob --reel. Ver o comentário no index.html. */
+#reel-backdrop {
+  position: absolute;
+  inset: 0;
+  /* Abaixo do bicho, que usa z-index -1 para espiar por trás da ilha. Com
+     z-index automático este fundo pintava por cima dele e o sumia do vídeo. */
+  z-index: -2;
+  opacity: 0;
+  pointer-events: none;
+  /* Paradas próximas criavam um anel visível no meio do quadro. Um degradê
+     linear longo, com o brilho concentrado atrás da ilha, não tem borda. */
+  background:
+    linear-gradient(180deg, #14161b 0%, #0e1013 42%, #0a0a0c 100%);
+  transition: opacity 0.4s var(--ease);
+}
+
+body.is-reel #reel-backdrop {
+  opacity: 1;
+}
+
+/* A borda de cima some no fundo escuro e a gravação fica sem referência de
+   onde termina a tela. Uma linha discreta resolve. */
+body.is-reel #reel-backdrop::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.14), transparent);
+}
+
 /* ---------------------------------------------------------------- corpo */
 
 #goo {

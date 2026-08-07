@@ -81,7 +81,7 @@ function createWindow() {
 
   // Sem janela visivel de devtools, um erro de modulo no renderer some sem
   // deixar rastro. Nos modos de teste, tudo vai pro stdout.
-  if (process.argv.some((a) => ['--dev', '--demo', '--show', '--fps', '--stress'].includes(a))) {
+  if (process.argv.some((a) => ['--dev', '--demo', '--show', '--fps', '--stress', '--reel'].includes(a))) {
     // stderr, nao stdout: no Windows o Electron e um app de subsistema GUI e o
     // stdout do processo principal nao chega em quem redirecionou.
     //
@@ -477,6 +477,7 @@ if (!gotLock) {
       type: 'boot',
       fps: process.argv.includes('--fps'),
       stress: process.argv.includes('--stress'),
+      reel: process.argv.includes('--reel'),
     });
 
     // --show / --demo abrem a ilha ja na inicializacao, sem depender do atalho
