@@ -417,6 +417,15 @@ function paintBridge() {
     return;
   }
 
+  // Portátil: o executável vive num temporário que some ao fechar. Conectar
+  // daqui gravaria um caminho morto, então nem oferecemos.
+  if (bridge.ephemeral) {
+    hint.textContent = 'a versão portátil não pode conectar — use o instalador';
+    button.textContent = 'indisponível';
+    button.disabled = true;
+    return;
+  }
+
   if (bridge.foreign) {
     // Não sobrescrevemos configuração de terceiro sem o usuário mandar.
     hint.textContent = 'você já tem outro statusLine configurado';
