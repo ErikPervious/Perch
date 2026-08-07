@@ -60,6 +60,10 @@ jobs:
 
       - run: node scripts/check.js
 
+      # `npm run build` passa `--publish never`. Sem isso o electron-builder
+      # detecta que esta rodando sobre uma tag, tenta publicar a release
+      # sozinho e falha pedindo token -- competindo com o passo de publicacao
+      # abaixo, que e quem de fato cria a release.
       - name: Compilar
         run: npm run build
         env:
