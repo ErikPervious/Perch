@@ -259,6 +259,7 @@ Tudo salva na hora; não há botão de aplicar.
 |---|---|
 | Conexão com o Claude Code | estado do bridge, conectar / desconectar |
 | Aparência | tema escuro ou claro, formato padrão, em qual monitor |
+| Atualizações | verificar novas versões, e verificar agora |
 | Atalhos | gravador de combinação, com teste de conflito e alerta de AltGr |
 | Comportamento | descer sozinha, pílula ociosa, Live Activity, tempo na tela |
 | O bicho | mostrar, espiar sozinho, fugir do mouse |
@@ -425,6 +426,26 @@ engasga — antes dessa guarda, editar o arquivo zerava todas as preferências e
 silêncio.
 
 ---
+
+## Atualizar
+
+O app verifica se há versão nova 20 segundos após abrir e depois a cada 6
+horas. Quando encontra, o painel mostra **o que mudou antes de você baixar** —
+as notas da release renderizadas ali mesmo, porque o instalador do Windows não
+tem tela de changelog. A bandeja também ganha um item de atualizar.
+
+O aviso na ilha aparece **uma vez por versão**, não a cada abertura, e respeita
+a faixa de horários. Atualização não é urgente como cota em 90%; se ela
+sequestrasse a ilha do mesmo jeito, desvalorizaria o alerta que importa.
+
+Baixar e instalar continua sendo seu: o app abre a página da release, e o
+instalador atualiza por cima preservando configurações e a conexão do bridge.
+A versão portátil não se atualiza sozinha — ela avisa, mas trocar o arquivo é
+manual.
+
+Essa verificação é a **única requisição de rede** do app, e desligável em
+**Configurações → Atualizações**. Detalhes do que exatamente é enviado (nada)
+em [SECURITY.md](SECURITY.md).
 
 ## Desinstalar
 

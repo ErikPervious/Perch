@@ -10,6 +10,7 @@ const { TriggerEngine } = require('./triggers');
 const { trayIcon } = require('./icon');
 const configStore = require('./config');
 const bridge = require('./bridge');
+const { UpdateChecker } = require('./updates');
 const { STATE_FILE, STATE_DIR, migrateLegacy } = require('./paths');
 
 // A janela e maior que a ilha de proposito: ela nunca redimensiona.
@@ -188,6 +189,43 @@ function bridgeStatus() {
   return { ...bridge.status(), wanted: config.bridgeWanted === true, lastReconnectAt };
 }
 
+// ------------------------------------------------------------ atualizacao
+
+const updates = new UpdateChecker(app.getVersion());
+
+/**
+ * Nova versão avisa UMA vez, e de forma discreta.
+ *
+ * Atualização não é urgente como cota em 90%. Se ela sequestrar a ilha do
+ * mesmo jeito, desvaloriza o alerta que importa -- e vale aqui o mesmo
+ * princípio do resto do app: aviso que aparece demais deixa de ser aviso.
+ *
+ * O canal permanente é a bandeja e o painel, que continuam lá quando você
+ * voltar para a máquina. A descida da ilha é só o toque inicial, uma vez por
+ * versão, e respeitando a faixa de horários configurada.
+ */
+function onUpdateAvailable(state) {
+  if (tray) tray.setContextMenu(buildTrayMenu());
+  pushState();
+  sendSettings('settings:changed', { config, shortcuts: activeShortcuts, bridge: bridgeStatus(), updates: state });
+
+  if (config.updateSeen === state.latest.version) return;
+  updateConfig({ updateSeen: state.latest.version });
+
+  if (!configStore.withinSchedule(config)) return;
+  send('island:command', {
+    type: 'alert',
+    peekMs: Math.max(config.peekMs, 5200),
+    alert: {
+      kind: 'update',
+      level: 'info',
+      title: `Perch ${state.latest.version} disponível`,
+      detail: 'detalhes nas configurações',
+      value: 0,
+    },
+  });
+}
+
 // ---------------------------------------------------------------- estado
 
 function pushState() {
@@ -241,6 +279,14 @@ function buildTrayMenu() {
       click: () => cycleFormat(),
     },
     { type: 'separator' },
+    ...(updates.state.available
+      ? [
+          {
+            label: `⬆  Atualizar para ${updates.state.latest.version}`,
+            click: () => shell.openExternal(updates.state.latest.url),
+          },
+        ]
+      : []),
     { label: 'Configurações…', click: () => createSettingsWindow() },
     { type: 'separator' },
     // Atalhos rapidos pro que se mexe no dia a dia. O resto mora no painel.
@@ -281,6 +327,11 @@ function updateConfig(patch) {
     registerShortcuts();
   }
   if (patch.display !== undefined && patch.display !== before.display) positionWindow();
+
+  if (patch.checkUpdates !== undefined && patch.checkUpdates !== before.checkUpdates) {
+    if (patch.checkUpdates) updates.start();
+    else updates.stop();
+  }
 
   if (tray) tray.setContextMenu(buildTrayMenu());
   pushState();
@@ -410,6 +461,9 @@ if (!gotLock) {
     });
     transcripts.start().catch((err) => console.error('[island] watcher de transcripts falhou:', err.message));
 
+    updates.on('available', onUpdateAvailable);
+    if (config.checkUpdates !== false) updates.start();
+
     screen.on('display-metrics-changed', positionWindow);
     screen.on('display-added', positionWindow);
     screen.on('display-removed', positionWindow);
@@ -481,8 +535,19 @@ if (!gotLock) {
     shortcuts: activeShortcuts,
     defaults: configStore.DEFAULTS,
     bridge: bridgeStatus(),
+    updates: updates.state,
     version: app.getVersion(),
   }));
+
+  ipcMain.handle('settings:check-updates', async () => {
+    const state = await updates.check();
+    sendSettings('settings:changed', { config, shortcuts: activeShortcuts, bridge: bridgeStatus(), updates: state });
+    return state;
+  });
+
+  ipcMain.on('settings:open-release', () => {
+    shell.openExternal(updates.state.latest?.url || updates.state.page);
+  });
 
   ipcMain.handle('settings:bridge', (_event, action) => {
     const result =
@@ -522,6 +587,7 @@ if (!gotLock) {
     globalShortcut.unregisterAll();
     usage.stop();
     transcripts.stop();
+    updates.stop();
     if (pointerTimer) clearInterval(pointerTimer);
   });
 }

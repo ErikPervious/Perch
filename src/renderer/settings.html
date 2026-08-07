@@ -24,6 +24,22 @@
       </header>
 
       <div class="panel__body">
+        <!-- ------------------------------------------------ atualização -->
+        <!-- Só aparece quando há versão nova. O que mudou precisa ser lido
+             ANTES de baixar: o instalador do Windows não mostra changelog. -->
+        <section class="group group--update" data-role="update-card" hidden>
+          <h2 class="group__title">Atualização disponível</h2>
+          <div class="update__head">
+            <span class="update__version num" data-role="update-version">—</span>
+            <span class="update__when" data-role="update-when"></span>
+          </div>
+          <div class="update__notes" data-role="update-notes"></div>
+          <div class="update__actions">
+            <button class="action is-on" data-action="open-release">Baixar</button>
+            <span class="row__hint" data-role="update-hint">o instalador atualiza por cima, preservando suas configurações</span>
+          </div>
+        </section>
+
         <!-- ---------------------------------------------------- bridge -->
         <section class="group">
           <h2 class="group__title">Conexão com o Claude Code</h2>
@@ -78,6 +94,32 @@
               <button data-value="primary">Principal</button>
               <button data-value="cursor">Do cursor</button>
             </div>
+          </div>
+        </section>
+
+        <!-- ------------------------------------------------ atualizações -->
+        <section class="group">
+          <h2 class="group__title">Atualizações</h2>
+          <p class="group__note">
+            Esta é a <b>única requisição de rede</b> do app: um GET anônimo na
+            API pública de releases do GitHub. Nada é enviado — nenhum
+            identificador, nenhum dado de uso, nenhuma credencial.
+          </p>
+
+          <div class="row">
+            <div class="row__text">
+              <span class="row__label">Verificar novas versões</span>
+              <span class="row__hint" data-role="update-status">—</span>
+            </div>
+            <button class="switch" data-switch="checkUpdates" role="switch"><i></i></button>
+          </div>
+
+          <div class="row" data-role="update-check-row">
+            <div class="row__text">
+              <span class="row__label">Verificar agora</span>
+              <span class="row__hint">a cada 6 horas, automaticamente</span>
+            </div>
+            <button class="action" data-action="check-updates">Verificar</button>
           </div>
         </section>
 

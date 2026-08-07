@@ -14,6 +14,7 @@ const $$ = (sel) => [...document.querySelectorAll(sel)];
 let config = null;
 let shortcuts = { toggle: null, detail: null, format: null };
 let bridge = null;
+let updates = null;
 
 /* ------------------------------------------------------------- utilidades */
 
@@ -148,6 +149,252 @@ window.addEventListener('keydown', async (event) => {
 
 /* ----------------------------------------------------------- desenhar UI */
 
+/* ---------------------------------------------------------- atualização */
+
+/* ------------------------------------------------ renderização de markdown
+
+   As notas da release vêm da API do GitHub, ou seja, **da rede**. Por isso
+   tudo aqui é montado com createElement e textContent: nada de innerHTML, ou
+   markdown numa release vira injeção de HTML dentro do painel.
+
+   Cobre o que notas de release realmente usam — títulos, listas, tabelas,
+   negrito, código, links e parágrafos. Não é um renderizador completo de
+   CommonMark, e não precisa ser: trazer uma biblioteca quebraria o "zero
+   dependências" por causa de uma caixinha de texto.
+*/
+
+/** Aplica negrito, código e links dentro de uma linha, devolvendo nós. */
+function inline(text, into) {
+  // Uma varredura só, alternando entre os três padrões.
+  const pattern = /(\*\*([^*]+)\*\*)|(`([^`]+)`)|(\[([^\]]+)\]\(([^)]+)\))/g;
+  let last = 0;
+  let match;
+
+  while ((match = pattern.exec(text)) !== null) {
+    if (match.index > last) into.append(document.createTextNode(text.slice(last, match.index)));
+
+    if (match[2] !== undefined) {
+      // Recursivo: negrito frequentemente envolve código nas notas de release
+      // (`**\`arquivo.exe\`**`). Sem descer um nível, as crases apareceriam
+      // como texto dentro do negrito.
+      into.append(inline(match[2], document.createElement('strong')));
+    } else if (match[4] !== undefined) {
+      // Dentro de código nada mais é markdown — este é o caso base.
+      const code = document.createElement('code');
+      code.textContent = match[4];
+      into.append(code);
+    } else {
+      // Link: só o texto vira clicável, e só para http(s).
+      const url = match[7];
+      if (/^https?:\/\//i.test(url)) {
+        const a = inline(match[6], document.createElement('a'));
+        a.href = url;
+        a.className = 'md__link';
+        into.append(a);
+      } else {
+        into.append(document.createTextNode(match[6]));
+      }
+    }
+    last = pattern.lastIndex;
+  }
+
+  if (last < text.length) into.append(document.createTextNode(text.slice(last)));
+  return into;
+}
+
+const isTableRow = (line) => /^\s*\|.*\|\s*$/.test(line);
+const isDivider = (line) => /^\s*\|[\s:|-]+\|\s*$/.test(line);
+const cells = (line) =>
+  line
+    .trim()
+    .replace(/^\||\|$/g, '')
+    .split('|')
+    .map((c) => c.trim());
+
+/** Converte markdown em um fragmento de DOM pronto para inserir. */
+function renderMarkdown(markdown) {
+  const lines = String(markdown || '')
+    .replace(/\r\n/g, '\n')
+    .split('\n');
+  const frag = document.createDocumentFragment();
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    if (!line.trim()) {
+      i += 1;
+      continue;
+    }
+
+    // Bloco de código cercado. Precisa vir antes de tudo: dentro dele nada
+    // é markdown, e sem tratar isso as próprias cercas vazam como parágrafo.
+    const fence = line.match(/^\s*```/);
+    if (fence) {
+      const parts = [];
+      i += 1;
+      while (i < lines.length && !/^\s*```/.test(lines[i])) {
+        parts.push(lines[i]);
+        i += 1;
+      }
+      i += 1; // consome a cerca de fechamento
+      const pre = document.createElement('pre');
+      pre.className = 'md__code';
+      pre.textContent = parts.join('\n').trim();
+      frag.append(pre);
+      continue;
+    }
+
+    // Título
+    const heading = line.match(/^(#{1,6})\s+(.+?)\s*$/);
+    if (heading) {
+      const el = document.createElement('div');
+      el.className = 'md__title';
+      inline(heading[2], el);
+      frag.append(el);
+      i += 1;
+      continue;
+    }
+
+    // Tabela
+    if (isTableRow(line) && isTableRow(lines[i + 1] || '') && isDivider(lines[i + 1])) {
+      const table = document.createElement('table');
+      table.className = 'md__table';
+      const head = document.createElement('tr');
+      for (const cell of cells(line)) {
+        const th = document.createElement('th');
+        inline(cell, th);
+        head.append(th);
+      }
+      table.append(head);
+      i += 2;
+      while (i < lines.length && isTableRow(lines[i])) {
+        const tr = document.createElement('tr');
+        for (const cell of cells(lines[i])) {
+          const td = document.createElement('td');
+          inline(cell, td);
+          tr.append(td);
+        }
+        table.append(tr);
+        i += 1;
+      }
+      frag.append(table);
+      continue;
+    }
+
+    // Lista
+    if (/^\s*([-*]|\d+\.)\s+/.test(line)) {
+      const ordered = /^\s*\d+\.\s/.test(line);
+      const list = document.createElement(ordered ? 'ol' : 'ul');
+      list.className = 'md__list';
+      while (i < lines.length && (/^\s*([-*]|\d+\.)\s+/.test(lines[i]) || /^\s{2,}\S/.test(lines[i]))) {
+        if (/^\s{2,}\S/.test(lines[i]) && list.lastElementChild) {
+          // Continuação do item anterior, quebrado em várias linhas.
+          list.lastElementChild.append(document.createTextNode(` ${lines[i].trim()}`));
+        } else {
+          const li = document.createElement('li');
+          inline(lines[i].replace(/^\s*([-*]|\d+\.)\s+/, ''), li);
+          list.append(li);
+        }
+        i += 1;
+      }
+      frag.append(list);
+      continue;
+    }
+
+    // Citação
+    if (/^\s*>\s?/.test(line)) {
+      const quote = document.createElement('div');
+      quote.className = 'md__quote';
+      const parts = [];
+      while (i < lines.length && /^\s*>\s?/.test(lines[i])) {
+        parts.push(lines[i].replace(/^\s*>\s?/, ''));
+        i += 1;
+      }
+      inline(parts.join(' '), quote);
+      frag.append(quote);
+      continue;
+    }
+
+    // Parágrafo: junta linhas até a próxima em branco ou bloco novo.
+    const parts = [];
+    while (
+      i < lines.length &&
+      lines[i].trim() &&
+      !/^(#{1,6}\s|\s*([-*]|\d+\.)\s|\s*>)/.test(lines[i]) &&
+      !isTableRow(lines[i])
+    ) {
+      parts.push(lines[i].trim());
+      i += 1;
+    }
+    if (parts.length) {
+      const p = document.createElement('p');
+      p.className = 'md__p';
+      inline(parts.join(' '), p);
+      frag.append(p);
+    }
+  }
+
+  return frag;
+}
+
+function fmtWhen(iso) {
+  if (!iso) return '';
+  const days = Math.floor((Date.now() - Date.parse(iso)) / 86400000);
+  if (days <= 0) return 'publicada hoje';
+  if (days === 1) return 'publicada ontem';
+  return `publicada há ${days} dias`;
+}
+
+function paintUpdates() {
+  const card = $('[data-role="update-card"]');
+  const status = $('[data-role="update-status"]');
+  const checkRow = $('[data-role="update-check-row"]');
+
+  checkRow.classList.toggle('is-off', config.checkUpdates === false);
+
+  if (!updates) {
+    status.textContent = 'verificando…';
+    card.hidden = true;
+    return;
+  }
+
+  if (config.checkUpdates === false) {
+    status.textContent = `desligado · você está na ${updates.current}`;
+  } else if (updates.lastError) {
+    const motivo = updates.lastError === 'limite-de-consultas' ? 'limite da API atingido' : `falhou (${updates.lastError})`;
+    status.textContent = `${motivo} · você está na ${updates.current}`;
+  } else if (updates.available) {
+    status.textContent = `${updates.latest.version} disponível · você está na ${updates.current}`;
+  } else if (updates.lastCheckedAt) {
+    const min = Math.round((Date.now() - updates.lastCheckedAt) / 60000);
+    status.textContent = `${updates.current} é a mais recente · verificado há ${min < 1 ? 'instantes' : `${min} min`}`;
+  } else {
+    status.textContent = `você está na ${updates.current}`;
+  }
+
+  if (!updates.available) {
+    card.hidden = true;
+    return;
+  }
+
+  card.hidden = false;
+  $('[data-role="update-version"]').textContent = `Perch ${updates.latest.version}`;
+  $('[data-role="update-when"]').textContent = fmtWhen(updates.latest.publishedAt);
+
+  const box = $('[data-role="update-notes"]');
+  box.replaceChildren();
+  const notes = (updates.latest.notes || '').trim();
+  if (!notes) {
+    const p = document.createElement('p');
+    p.className = 'md__p';
+    p.textContent = 'Esta versão foi publicada sem notas.';
+    box.append(p);
+    return;
+  }
+  box.append(renderMarkdown(notes));
+}
+
 /** Estado do bridge em uma frase e um botão. */
 function paintBridge() {
   const button = $('[data-action="bridge-toggle"]');
@@ -201,6 +448,7 @@ function paint() {
 
   document.documentElement.dataset.theme = config.theme === 'light' ? 'light' : 'dark';
   paintBridge();
+  paintUpdates();
 
   for (const group of $$('[data-segment]')) {
     const current = read(group.dataset.segment);
@@ -307,6 +555,25 @@ document.addEventListener('click', (event) => {
     return;
   }
 
+  const check = target.closest('[data-action="check-updates"]');
+  if (check) {
+    check.disabled = true;
+    check.textContent = '…';
+    window.settings.checkUpdates().then((state) => {
+      updates = state;
+      check.disabled = false;
+      check.textContent = 'Verificar';
+      flashSaved(state.available ? `${state.latest.version} disponível` : 'já está atualizado');
+      paint();
+    });
+    return;
+  }
+
+  if (target.closest('[data-action="open-release"]')) {
+    window.settings.openRelease();
+    return;
+  }
+
   if (target.closest('[data-action="close"]')) window.settings.close();
   if (target.closest('[data-action="open-data"]')) window.settings.openDataFolder();
 });
@@ -331,6 +598,7 @@ function adopt(payload) {
   config = payload.config;
   shortcuts = payload.shortcuts || shortcuts;
   if (payload.bridge) bridge = payload.bridge;
+  if (payload.updates) updates = payload.updates;
   if (payload.version) $('[data-role="subtitle"]').textContent = `configurações · v${payload.version}`;
   paint();
 }

@@ -28,6 +28,14 @@ const DEFAULTS = {
   // proposito" -- sem isso o app reinstalaria por cima da decisao dele.
   bridgeWanted: false,
 
+  // --- atualizacao
+  //
+  // A UNICA requisicao de rede do app: um GET anonimo na API publica de
+  // releases do GitHub. Nada e enviado. `updateSeen` guarda a ultima versao
+  // ja anunciada, pra ilha avisar uma vez por versao em vez de a cada abertura.
+  checkUpdates: true,
+  updateSeen: null,
+
   // --- comportamento
   autoDrop: true, // descer sozinha nos gatilhos
   idleVisible: false, // manter uma pilula discreta quando ocioso

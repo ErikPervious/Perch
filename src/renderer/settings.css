@@ -351,6 +351,175 @@ code {
   background: color-mix(in srgb, var(--danger) 12%, transparent);
 }
 
+/* --------------------------------------------------------- atualizacao */
+
+/* Destacada do resto: e a unica secao que aparece por evento, nao por opcao. */
+.group--update {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+}
+
+.group--update .group__title {
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+
+.update__head {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  margin-bottom: 10px;
+}
+
+.update__version {
+  font-size: 17px;
+  font-weight: 650;
+}
+
+.update__when {
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.update__notes {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  max-height: 190px;
+  overflow-y: auto;
+  margin-bottom: 13px;
+}
+
+/* ------------------------------------------------ markdown das notas ---
+   Renderizado a partir de texto vindo da rede, sempre como nós de DOM.
+   Ver o comentário em settings.js. */
+
+.md__title {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-top: 4px;
+}
+
+.md__title:first-child {
+  margin-top: 0;
+}
+
+.md__p {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.md__list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.md__list li {
+  position: relative;
+  padding-left: 15px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+.md__list li::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 7.5px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 70%, transparent);
+}
+
+.md__quote {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--ink-3);
+  padding-left: 10px;
+  border-left: 2px solid var(--line);
+}
+
+.md__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11.5px;
+}
+
+.md__table th,
+.md__table td {
+  text-align: left;
+  padding: 5px 9px 5px 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-2);
+  vertical-align: top;
+}
+
+.md__table th {
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.md__table tr:last-child td {
+  border-bottom: 0;
+}
+
+.update__notes strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.update__notes code {
+  font-family: var(--mono);
+  font-size: 0.9em;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: var(--bg-3);
+}
+
+.md__code {
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.55;
+  color: var(--ink-2);
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 9px 11px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
+}
+
+.md__link {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+.update__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.update__actions .row__hint {
+  flex: 1;
+}
+
 /* ---------------------------------------------------------------- acao */
 
 .action {
