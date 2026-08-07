@@ -65,6 +65,24 @@ do renderer ainda não tinha registrado os listeners e a mensagem se perdia.
 O `ready()` é chamado no **fim** do pré-aquecimento, não no carregamento. "Pronto"
 tem que significar rasterizado.
 
+### O caminho no settings.json precisa ser absoluto
+
+Já foi tentado gravar `"%LOCALAPPDATA%\Perch\statusline.cmd"` para não deixar o
+nome de usuário no arquivo. **Não funciona.**
+
+O Claude Code não executa a statusLine pelo `cmd`. O executor de hooks aceita
+bash ou PowerShell (`e.shell ?? b1t()`), e no Windows, quando não é PowerShell,
+ele ainda converte `\` em `/` — indício de shell POSIX. Nenhum dos dois expande
+`%VAR%`, e o comando falha **em silêncio**: a ilha simplesmente para de receber
+dados.
+
+`$LOCALAPPDATA` também não serve — funcionaria no bash e falharia no
+PowerShell, que exige `$env:`. Como o shell varia por usuário, não há forma
+portátil.
+
+O nome de usuário no `settings.json` é inevitável. Ele fica num arquivo local;
+quem for compartilhar a própria configuração que censure aquela linha.
+
 ### O settings.json tem dois escritores
 
 O Claude Code mantém a config dele em memória e **regrava o arquivo inteiro**
