@@ -65,6 +65,23 @@ do renderer ainda não tinha registrado os listeners e a mensagem se perdia.
 O `ready()` é chamado no **fim** do pré-aquecimento, não no carregamento. "Pronto"
 tem que significar rasterizado.
 
+### O settings.json tem dois escritores
+
+O Claude Code mantém a config dele em memória e **regrava o arquivo inteiro**
+quando algo muda. Uma sessão que carregou o arquivo antes da nossa instalação
+apaga o nosso `statusLine` ao regravar.
+
+O sintoma é traiçoeiro: sessões antigas continuam invocando o bridge de
+memória, então os dados só somem quando a última delas fecha — horas depois,
+sem nada apontando para a causa. Foi assim que o bug foi descoberto: o
+`state.json` seguia sendo alimentado nove horas depois da entrada ter sumido.
+
+Por isso `keepBridgeAlive()` roda a cada 60s, não só na inicialização, e por
+isso existe `config.bridgeWanted`: sem guardar a **intenção** do usuário não
+haveria como distinguir "apagaram" de "ele desconectou de propósito", e o app
+reinstalaria por cima da decisão dele. Nunca reinstalar sobre um `statusLine`
+de terceiro.
+
 ### Só o processo principal escreve config
 
 O renderer nunca grava `config.json`. Quem cicla formato, grava atalho ou muda
