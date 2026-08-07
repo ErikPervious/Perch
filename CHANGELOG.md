@@ -6,6 +6,8 @@ disponível — então escreva pensando em quem vai ler antes de decidir se baix
 
 ## [Não publicado]
 
+## [1.0.2] — 2026-08-07
+
 ### Adicionado
 
 - Botão de fixar ao lado da engrenagem. O painel já podia ser travado clicando
@@ -93,6 +95,7 @@ Primeira versão pública.
 - O bridge roda pelo próprio executável em modo Node, então **o app não exige
   Node instalado**.
 
-[Não publicado]: https://github.com/ErikPervious/Perch/compare/v1.0.1...HEAD
+[Não publicado]: https://github.com/ErikPervious/Perch/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/ErikPervious/Perch/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/ErikPervious/Perch/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/ErikPervious/Perch/releases/tag/v1.0.0
