@@ -1,4 +1,15 @@
-# Perch
+<p align="center">
+  <img src="docs/hero.png" alt="Perch — ilha preta no topo da tela com anel de progresso verde, um bicho espiando pela borda e uma grade de consumo indo de verde a vermelho" width="880">
+</p>
+
+<h1 align="center">Perch</h1>
+
+<p align="center">
+  <a href="https://github.com/ErikPervious/Perch/releases/latest"><img src="https://img.shields.io/github/v/release/ErikPervious/Perch?style=flat-square&color=30d158&labelColor=0b0b0d" alt="versão"></a>
+  <img src="https://img.shields.io/badge/plataforma-Windows%2010%20%7C%2011-0b0b0d?style=flat-square&labelColor=0b0b0d" alt="plataforma">
+  <img src="https://img.shields.io/badge/depend%C3%AAncias%20em%20runtime-0-30d158?style=flat-square&labelColor=0b0b0d" alt="zero dependências em runtime">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/licen%C3%A7a-MIT-0b0b0d?style=flat-square&labelColor=0b0b0d" alt="licença MIT"></a>
+</p>
 
 Uma Dynamic Island para Windows que mostra o uso da sua sessão do Claude Code.
 Fica escondida no topo da tela, desce com um atalho, expande no hover — e desce
