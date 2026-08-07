@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verificar:
+    name: Sintaxe e invariantes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      # Nao precisa de `npm ci`: o verificador so usa modulos embutidos do Node.
+      - run: node scripts/check.js
+
+  compilar:
+    name: Build do Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      # O Electron e o electron-builder baixam runtimes de ~100MB fora do
+      # node_modules. Sem cachear, todo PR paga esse download de novo.
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~\AppData\Local\electron\Cache
+            ~\AppData\Local\electron-builder\Cache
+          key: ${{ runner.os }}-electron-${{ hashFiles('package-lock.json') }}
+          restore-keys: ${{ runner.os }}-electron-
+
+      - run: npm ci
+      - name: Compilar
+        run: npm run build
+        env:
+          # Sem certificado de code signing. Sem isto o electron-builder
+          # procura um no sistema e falha no runner.
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      - name: Confirmar que os binarios sairam
+        shell: bash
+        run: |
+          ls -lh dist/*.exe
+          test -f dist/Perch-*-instalador.exe
+          test -f dist/Perch-*-portatil.exe

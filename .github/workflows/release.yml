@@ -1,0 +1,90 @@
+name: Release
+
+# Publicar passa a ser: atualizar o CHANGELOG, subir a versao no package.json,
+# criar a tag. O resto acontece aqui.
+#
+# Isso resolve mais que conveniencia: antes os binarios saiam da maquina do
+# autor, e ninguem sabia se o projeto compila num checkout limpo. Agora cada
+# release prova isso, e some o risco de publicar um build feito de um working
+# tree com alteracao nao commitada.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag existente para (re)publicar, ex: v1.0.1'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  publicar:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~\AppData\Local\electron\Cache
+            ~\AppData\Local\electron-builder\Cache
+          key: ${{ runner.os }}-electron-${{ hashFiles('package-lock.json') }}
+          restore-keys: ${{ runner.os }}-electron-
+
+      - run: npm ci
+
+      # A tag manda no nome dos artefatos, mas quem gera o nome e o
+      # package.json. Se divergirem, sai Perch-1.0.0-instalador.exe numa
+      # release v1.0.1 -- e ninguem percebe ate alguem baixar.
+      - name: A tag bate com a versao do package.json?
+        shell: bash
+        run: |
+          tag="${TAG#v}"
+          pkg="$(node -p "require('./package.json').version")"
+          if [ "$tag" != "$pkg" ]; then
+            echo "::error::tag v$tag nao bate com package.json $pkg"
+            exit 1
+          fi
+          echo "versao: $pkg"
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
+
+      - run: node scripts/check.js
+
+      - name: Compilar
+        run: npm run build
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      # Falha de proposito se a versao nao estiver no CHANGELOG: publicar sem
+      # registrar o que mudou e o tipo de coisa que so aparece depois, quando
+      # alguem pergunta. Alem disso o app mostra essas notas no painel.
+      - name: Extrair as notas do CHANGELOG
+        shell: bash
+        run: node scripts/release-notes.js "$TAG" > NOTES.md
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
+
+      - name: Publicar a release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          titulo="Perch ${TAG#v}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "release ja existe: atualizando notas e anexos"
+            gh release edit "$TAG" --title "$titulo" --notes-file NOTES.md
+            gh release upload "$TAG" dist/*.exe --clobber
+          else
+            gh release create "$TAG" --title "$titulo" --notes-file NOTES.md dist/*.exe
+          fi
