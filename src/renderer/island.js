@@ -291,8 +291,16 @@ const REEL_PATH = [
 let reelActive = false;
 let reelStartedAt = 0;
 
-function startReel() {
-  document.body.classList.add('is-reel');
+/**
+ * @param backdrop desenha um fundo opaco no lugar da transparência.
+ *
+ * Desligado por padrão: com a janela transparente, a gravação mostra o papel
+ * de parede e o app aparece no contexto real, que é o que se quer num vídeo
+ * de demonstração. Ligue quando não quiser expor o que estiver na tela —
+ * a gravação captura tudo que estiver atrás da ilha.
+ */
+function startReel(backdrop) {
+  if (backdrop) document.body.classList.add('is-reel');
   reelActive = true;
   reelStartedAt = performance.now() + REEL_LEAD_IN * 1000;
 
@@ -758,7 +766,7 @@ window.island.onCommand((payload) => {
       fps.on = true;
       fps.since = performance.now();
     }
-    if (payload.reel) startReel();
+    if (payload.reel) startReel(payload.backdrop);
 
     // --stress fica trocando de estado pra medicao cair em cima dos morphs,
     // que e onde a travada aparece. Ilha parada rodando a 60fps nao prova nada.

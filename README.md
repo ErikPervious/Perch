@@ -385,18 +385,19 @@ não chega em quem redirecionou.
 
 ```bash
 npm run dev -- --reel
-powershell -ExecutionPolicy Bypass -File scripts/record-reel.ps1 -Seconds 20
-node scripts/encode-gif.js --scale 0.6 --from 50 --to 362
 ```
 
-`--reel` executa uma coreografia com tempos fixos — descida, detalhes, barra,
-pílula, alerta com tremor, e o cursor se aproximando do bicho para ele fugir.
-Acertar isso ao vivo exigiria muitas tomadas.
+Executa uma coreografia com tempos fixos — descida, detalhes, barra, pílula,
+alerta com tremor, e o cursor se aproximando do bicho para ele fugir. Acertar
+isso ao vivo exigiria muitas tomadas; assim é uma só, e repetível.
 
-Dois detalhes que existem por motivo:
+Grave com um capturador de tela de verdade (Xbox Game Bar, `Win+Alt+R`, já vem
+no Windows; ou ScreenToGif, que permite recortar a região). Sai MP4 com
+aceleração de GPU a 60fps, que é o que se quer para publicar.
 
-O modo desenha um **fundo próprio**. A janela é transparente, então gravar a
-tela capturaria o editor e o código de quem está gravando.
+> A janela é transparente: **o que estiver na tela vai para o vídeo**. Limpe a
+> área de trabalho antes. Se preferir um fundo opaco no lugar do papel de
+> parede, acrescente `--backdrop`.
 
 O **cursor é sintético**, seguindo uma trajetória coreografada. No vídeo
 ninguém vê o mouse de quem grava, então sem isso o olhar do bicho ficaria
@@ -404,11 +405,24 @@ parado. A trajetória passa longe dele até os 9s e se aproxima uma vez só —
 na primeira tentativa o arco passava perto o tempo todo e ele ficava escondido
 no vídeo inteiro.
 
-A captura grava BGRA cru: codificar PNG dentro do laço derruba a taxa para uns
-10fps, e a mola da animação vive nos primeiros 200ms de cada morph. Assim dá
-20fps. O tempo de boot varia, então grave com folga e apare por índice de frame
-— `node scripts/encode-gif.js --help` não existe, mas `--from`, `--to`,
-`--scale` e `--every` sim.
+#### Captura sem instalar nada
+
+Há também um capturador próprio, útil quando não se quer instalar gravador:
+
+```bash
+powershell -ExecutionPolicy Bypass -File scripts/record-reel.ps1 -Seconds 20
+node scripts/encode-gif.js --scale 0.6 --from 50 --to 362
+```
+
+Ele grava BGRA cru — codificar PNG dentro do laço derruba a taxa para uns
+10fps, e a mola vive nos primeiros 200ms de cada morph. Assim chega a 20fps.
+O tempo de boot varia, então grave com folga e apare por índice de frame com
+`--from` e `--to`; `scripts/timeline` não existe, mas contar pixels claros por
+frame localiza as transições sem chutar.
+
+Fica abaixo de um gravador dedicado: 20fps contra 60, e o GIF tem paleta de
+256 cores. Serve para conferir animação durante o desenvolvimento, não para
+publicar.
 
 ### Compilar
 

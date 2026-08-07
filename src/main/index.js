@@ -478,6 +478,7 @@ if (!gotLock) {
       fps: process.argv.includes('--fps'),
       stress: process.argv.includes('--stress'),
       reel: process.argv.includes('--reel'),
+      backdrop: process.argv.includes('--backdrop'),
     });
 
     // --show / --demo abrem a ilha ja na inicializacao, sem depender do atalho
