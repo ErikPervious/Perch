@@ -23,9 +23,14 @@ Anthropic. Descrever o que o app faz é uso nominativo e segue tranquilo.
 
 ## Instalação
 
-Baixe e execute **`Perch-1.0.0-instalador.exe`**. Instala em `%LOCALAPPDATA%`
-sem pedir administrador, com atalho no menu iniciar e desinstalador. Existe
-também `Perch-1.0.0-portatil.exe`, que roda direto sem instalar nada.
+Baixe o **[instalador na última release](https://github.com/ErikPervious/Perch/releases/latest)**.
+Ele instala em `%LOCALAPPDATA%` sem pedir administrador, com atalho no menu
+iniciar e desinstalador. Há também uma versão portátil, que roda direto sem
+instalar nada.
+
+Windows 10 ou 11, 64 bits. O executável não é assinado — veja
+[SECURITY.md](SECURITY.md) para o porquê e para o que exatamente o app lê e
+escreve.
 
 O ícone aparece na bandeja. Abra **Configurações → Conexão com o Claude Code →
 conectar**, inicie uma sessão do Claude Code e mande uma mensagem. Os números
