@@ -55,15 +55,23 @@
 
       <!-- Camada de conteudo: alinhada com o shell, sem filtro. -->
       <div id="content">
-        <!-- Engrenagem discreta no canto: so aparece com o mouse em cima, e
-             so nos formatos que tem altura pra ela. -->
-        <button id="gear" title="Configurações" aria-label="Configurações">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path
-              d="M12 15.4a3.4 3.4 0 1 0 0-6.8 3.4 3.4 0 0 0 0 6.8Z M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06a2 2 0 1 1-2.84 2.83l-.06-.06a1.7 1.7 0 0 0-1.88-.33 1.7 1.7 0 0 0-1 1.55v.18a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.11-1.55 1.7 1.7 0 0 0-1.88.34l-.06.06a2 2 0 1 1-2.83-2.84l.06-.06a1.7 1.7 0 0 0 .33-1.88 1.7 1.7 0 0 0-1.55-1H2.8a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.55-1.11 1.7 1.7 0 0 0-.34-1.88l-.06-.06a2 2 0 1 1 2.84-2.83l.06.06a1.7 1.7 0 0 0 1.88.33h.08a1.7 1.7 0 0 0 1-1.55V2.8a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.89-.34l.06-.06a2 2 0 1 1 2.83 2.84l-.06.06a1.7 1.7 0 0 0-.33 1.88v.08a1.7 1.7 0 0 0 1.55 1h.18a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.55 1Z"
-            />
-          </svg>
-        </button>
+        <!-- Botoes do canto: so aparecem com o mouse em cima, e so nos
+             formatos que tem altura pra eles. O de fixar vem primeiro porque
+             e o que se usa com mais frequencia. -->
+        <div id="corner">
+          <button id="pin" title="Fixar na tela" aria-label="Fixar na tela" aria-pressed="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M9 3h6M10 3v6.5L7 13v2h10v-2l-3-3.5V3M12 15v6" />
+            </svg>
+          </button>
+          <button id="gear" title="Configurações" aria-label="Configurações">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M12 15.4a3.4 3.4 0 1 0 0-6.8 3.4 3.4 0 0 0 0 6.8Z M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06a2 2 0 1 1-2.84 2.83l-.06-.06a1.7 1.7 0 0 0-1.88-.33 1.7 1.7 0 0 0-1 1.55v.18a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.11-1.55 1.7 1.7 0 0 0-1.88.34l-.06.06a2 2 0 1 1-2.83-2.84l.06-.06a1.7 1.7 0 0 0 .33-1.88 1.7 1.7 0 0 0-1.55-1H2.8a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.55-1.11 1.7 1.7 0 0 0-.34-1.88l-.06-.06a2 2 0 1 1 2.84-2.83l.06.06a1.7 1.7 0 0 0 1.88.33h.08a1.7 1.7 0 0 0 1-1.55V2.8a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.89-.34l.06-.06a2 2 0 1 1 2.83 2.84l-.06.06a1.7 1.7 0 0 0-.33 1.88v.08a1.7 1.7 0 0 0 1.55 1h.18a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.55 1Z"
+              />
+            </svg>
+          </button>
+        </div>
 
         <!-- ---------------------------------------------------- pilula -->
         <section class="layer" data-layer="pill">

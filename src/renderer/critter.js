@@ -21,7 +21,10 @@ import { Spring, PRESETS } from './spring.js';
    ========================================================================= */
 
 const MOOD = {
-  sleepy: { lid: 0.52, pupil: 2.3, sway: 0.6, blinkEvery: [4500, 9000] },
+  // `lid` mais alto que o intuitivo no sonolento de proposito: com o bicho
+  // espiando, so a metade de baixo do olho esta na tela, e fechar demais nao
+  // le como "sonolento" -- le como olho cortado.
+  sleepy: { lid: 0.7, pupil: 2.3, sway: 0.6, blinkEvery: [4500, 9000] },
   normal: { lid: 1, pupil: 2.6, sway: 1.5, blinkEvery: [2600, 6500] },
   keen: { lid: 1, pupil: 2.35, sway: 2.6, blinkEvery: [1800, 4200] },
   alarmed: { lid: 1.18, pupil: 3.3, sway: 3.4, blinkEvery: [1100, 2600] },
@@ -33,6 +36,19 @@ const EYE_CY = 25;
 const EYE_RX = 5.8;
 const EYE_RY = 6.6;
 const EYE_MARGIN = 0.5; // fresta de branco que sempre sobra na borda
+
+/**
+ * Ponto em torno do qual a palpebra encolhe.
+ *
+ * Encolher pelo CENTRO do olho seria o intuitivo, mas o centro esta exatamente
+ * na borda da tela (PEEK_Y = -EYE_CY): fechar comeria justamente a metade que
+ * aparece, e o olho sumia num risco fino com a pupila maior que a fresta.
+ *
+ * Deslocando o pivo pra baixo, o fechamento come primeiro a metade que ja esta
+ * fora da tela. A piscada continua visivel -- vira uma linha fina em vez de
+ * nada -- e o sonolento mantem olho suficiente pra caber pupila.
+ */
+const LID_PIVOT = EYE_CY + EYE_RY * 0.5;
 
 // Deslocamento vertical do elemento inteiro. Como o topo da janela corta o que
 // sobe, isto controla quanto do bicho aparece.
@@ -191,7 +207,7 @@ export class Critter {
     for (const lid of this.lids) {
       lid.setAttribute(
         'transform',
-        `translate(0 ${EYE_CY}) scale(1 ${Math.max(0.02, openness).toFixed(3)}) translate(0 ${-EYE_CY})`,
+        `translate(0 ${LID_PIVOT}) scale(1 ${Math.max(0.02, openness).toFixed(3)}) translate(0 ${-LID_PIVOT})`,
       );
     }
 
