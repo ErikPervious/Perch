@@ -16,7 +16,7 @@
     "pack": "electron-builder --dir"
   },
   "devDependencies": {
-    "electron": "^39.8.10",
+    "electron": "^42.11.16",
     "electron-builder": "^26.0.0"
   },
   "build": {
